@@ -1,12 +1,14 @@
-# TaskFlow - Project Management Application
+# TaskFlow - WordPress-Style Task Management Application
 
 ## Overview
 
-TaskFlow is a modern full-stack project management application built with React frontend and Express backend. It features workspace-based task organization, real-time collaboration, and role-based access control. The application uses a PostgreSQL database with Drizzle ORM and includes comprehensive authentication through Replit's OIDC provider.
+TaskFlow is a comprehensive task management application built for teams transitioning from WhatsApp chaos to organized productivity. It features WordPress-style user management with role-based access control (Admin/Worker), workspace organization, ClickUp-inspired interface, file uploads, analytics dashboard, and deployment-ready architecture for Hostinger hosting.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Design requirements: Professional, modern interface with good color scheme and organized layout.
+Functionality: WordPress-style user management, analytics for productivity tracking, unlimited workspaces, image uploads, external links, ClickUp-style expandable tasks.
 
 ## System Architecture
 
@@ -37,27 +39,37 @@ Preferred communication style: Simple, everyday language.
 ### Authentication System
 - **Provider**: Replit OIDC integration
 - **Session Storage**: PostgreSQL-backed sessions
-- **Authorization**: Role-based access control (admin/worker)
+- **Authorization**: WordPress-style role-based access control (Admin/Worker)
+- **Admin Features**: User management, analytics dashboard, workspace oversight
+- **Worker Features**: Task assignment, personal "My Tasks" page, workspace participation
 - **Security**: HTTP-only cookies, CSRF protection
 
 ### Workspace Management
+- **Unlimited Workspaces**: Create workspaces for design, sales, optimization, etc.
 - **Multi-tenant**: Users can belong to multiple workspaces
 - **Permissions**: Workspace-level member management
-- **Customization**: Color themes and icons for workspaces
-- **Archive**: Soft delete functionality for workspaces
+- **Customization**: Color themes and FontAwesome icons for workspaces
+- **Organization**: Separate workspace types (design, development, marketing, etc.)
+- **Personal Organization**: "My Tasks" page showing only user's assigned tasks
 
 ### Task Management
-- **Kanban Board**: Visual task organization by status
+- **Kanban Board**: Visual task organization by status (todo, in-progress, done)
 - **Priority Levels**: High, medium, low priority classification
-- **Assignments**: User assignment with due dates
-- **Comments**: Threaded discussions on tasks
-- **Attachments**: File upload support (images, PDFs)
+- **Assignments**: User assignment with due dates and time tracking
+- **Comments**: Threaded discussions on tasks with real-time updates
+- **Attachments**: File upload support (images, PDFs, documents)
+- **External Links**: Add website links and resources to tasks
+- **ClickUp-Style Interface**: Expandable task modals with comprehensive details
+- **Time Tracking**: Estimated vs actual hours for project planning
 
 ### User Interface
+- **Modern Design**: Professional gradient backgrounds and card-based layout
 - **Responsive Design**: Mobile-first approach with desktop optimization
 - **Component Library**: Comprehensive UI components from shadcn/ui
-- **Theme System**: CSS variables for consistent styling
-- **Accessibility**: ARIA compliance through Radix UI primitives
+- **ClickUp-Inspired**: Task cards, expandable modals, drag-and-drop boards
+- **Analytics Dashboard**: Charts and metrics for admin productivity tracking
+- **Sidebar Navigation**: Fixed sidebar with workspace and page navigation
+- **Theme System**: Professional color scheme with blue/green/purple gradients
 
 ## Data Flow
 

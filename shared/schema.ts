@@ -58,6 +58,9 @@ export const tasks = pgTable("tasks", {
   assigneeId: varchar("assignee_id").references(() => users.id),
   createdBy: varchar("created_by").references(() => users.id).notNull(),
   tags: text("tags").array().default([]),
+  links: text("links").array().default([]), // For external links
+  estimatedHours: integer("estimated_hours"),
+  actualHours: integer("actual_hours"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   completedAt: timestamp("completed_at"),
@@ -67,7 +70,7 @@ export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   taskId: integer("task_id").references(() => tasks.id).notNull(),
   authorId: varchar("author_id").references(() => users.id).notNull(),
-  body: text("body").notNull(),
+  content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -75,9 +78,10 @@ export const attachments = pgTable("attachments", {
   id: serial("id").primaryKey(),
   taskId: integer("task_id").references(() => tasks.id).notNull(),
   fileName: varchar("file_name", { length: 255 }).notNull(),
-  fileUrl: text("file_url").notNull(),
-  fileType: varchar("file_type", { length: 50 }).notNull(),
+  originalName: varchar("original_name", { length: 255 }).notNull(),
+  fileType: varchar("file_type", { length: 100 }).notNull(),
   fileSize: integer("file_size").notNull(),
+  fileUrl: text("file_url").notNull(),
   uploadedBy: varchar("uploaded_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
