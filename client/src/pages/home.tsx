@@ -75,254 +75,244 @@ export default function Home() {
     .slice(0, 5);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="flex min-h-screen bg-white">
       <Sidebar />
       
       <div className="ml-64 flex-1">
-        {/* Header */}
-        <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                Welcome back, {user?.firstName || 'User'}!
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 px-12 py-16">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+              <h1 className="text-6xl font-bold text-gray-900 mb-6">
+                The everything app, <span className="text-blue-600">for work</span>
               </h1>
-              <p className="text-gray-600 mt-3 text-lg">
-                Here's what's happening with your tasks and workspaces today.
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                Get everyone working in a single platform designed to manage any type of work.
               </p>
-            </div>
-            <div className="flex items-center space-x-4">
               <CreateWorkspaceModal>
-                <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Workspace
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  Get Started. It's FREE →
                 </Button>
               </CreateWorkspaceModal>
+              <p className="text-sm text-gray-500 mt-4">Free Forever. No Credit Card.</p>
             </div>
           </div>
-        </header>
+        </div>
 
-        <div className="p-8 space-y-8">
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-sm font-medium text-blue-100">Total Tasks</CardTitle>
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <Target className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold mb-1">{totalTasks}</div>
-                <p className="text-blue-100 text-sm">All assigned tasks</p>
-              </CardContent>
-            </Card>
+        {/* Feature Cards Section */}
+        <div className="px-12 py-20">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">
+              Everything your team is looking for
+            </h2>
+            <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto mb-16">
+              ClickUp's exceptional flexibility can handle any type of work. And we never stop innovating.
+            </p>
 
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-emerald-500 via-green-600 to-emerald-700 text-white hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-sm font-medium text-emerald-100">Completed</CardTitle>
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold mb-1">{completedTasks}</div>
-                <p className="text-emerald-100 text-sm">
-                  {totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}% completion rate
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-amber-500 via-orange-600 to-yellow-600 text-white hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-sm font-medium text-amber-100">In Progress</CardTitle>
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <Clock className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold mb-1">{inProgressTasks}</div>
-                <p className="text-amber-100 text-sm">Currently working on</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-rose-500 via-red-600 to-pink-600 text-white hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-sm font-medium text-rose-100">Overdue</CardTitle>
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold mb-1">{overdueTasks}</div>
-                <p className="text-rose-100 text-sm">Need immediate attention</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* My Workspaces */}
-            <div className="lg:col-span-2">
-              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
-                <CardHeader className="bg-gradient-to-r from-blue-600/10 to-indigo-600/10 rounded-t-lg">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center text-lg">
-                      <div className="p-2 bg-blue-600/10 rounded-lg mr-3">
-                        <FolderOpen className="h-5 w-5 text-blue-600" />
-                      </div>
-                      My Workspaces
-                    </CardTitle>
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 font-semibold">
-                      {workspaces.length}
-                    </Badge>
+            {/* Main Feature Cards */}
+            <div className="grid md:grid-cols-3 gap-8 mb-16">
+              {/* AI-powered productivity */}
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-600 to-pink-600 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                <div className="space-y-6">
+                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                    <TrendingUp className="h-8 w-8 text-white" />
                   </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  {workspaces.length > 0 ? (
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {workspaces.slice(0, 4).map((workspace) => (
-                        <Card key={workspace.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer border border-gray-200/50 hover:border-blue-300 group">
-                          <CardContent className="p-5">
-                            <div className="flex items-center space-x-4">
-                              <div 
-                                className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200"
-                                style={{ backgroundColor: workspace.color || '#3b82f6' }}
-                              >
-                                <i className={`${workspace.icon} text-white text-lg`}></i>
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">
-                                  {workspace.name}
-                                </h4>
-                                <p className="text-sm text-gray-600 truncate mt-1">
-                                  {workspace.description || "No description"}
-                                </p>
-                                <div className="flex items-center mt-2 text-xs text-gray-500">
-                                  <div className="flex items-center bg-gray-100 px-2 py-1 rounded-full">
-                                    <Users className="w-3 h-3 mr-1" />
-                                    {workspace.members?.length || 0} members
-                                  </div>
-                                  <div className="flex items-center bg-blue-100 px-2 py-1 rounded-full ml-2">
-                                    <Target className="w-3 h-3 mr-1 text-blue-600" />
-                                    {workspace.taskCount || 0} tasks
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                  <div>
+                    <h3 className="text-2xl font-bold mb-4">AI-powered productivity</h3>
+                    <p className="text-purple-100 mb-6">
+                      Get work done faster with the only AI-powered assistant tailored to your role.
+                    </p>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                        <span className="text-sm text-purple-100">Generate action items</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                        <span className="text-sm text-purple-100">Use simple language</span>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <FolderOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No workspaces yet</h3>
-                      <p className="text-gray-500 mb-4">Create your first workspace to get started</p>
-                      <CreateWorkspaceModal>
-                        <Button>Create Workspace</Button>
-                      </CreateWorkspaceModal>
+                  </div>
+                </div>
+              </Card>
+
+              {/* View work your way */}
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                <div className="space-y-6">
+                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                    <FolderOpen className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-4">View work your way</h3>
+                    <p className="text-blue-100 mb-6">
+                      Instantly switch between 15 views including list, board, gantt, and more.
+                    </p>
+                    <div className="bg-white/20 rounded-lg p-4">
+                      <div className="text-xs text-blue-100 mb-2">Quick stats:</div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <div className="text-2xl font-bold">{totalTasks}</div>
+                          <div className="text-blue-100">Total Tasks</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold">{completedTasks}</div>
+                          <div className="text-blue-100">Completed</div>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </CardContent>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Customize in a click */}
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                <div className="space-y-6">
+                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                    <Target className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-4">Customize in a click</h3>
+                    <p className="text-indigo-100 mb-6">
+                      Configuring ClickUp for different types of work is as easy as flipping a switch.
+                    </p>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between bg-white/20 rounded-lg p-3">
+                        <div className="flex items-center space-x-3">
+                          <Clock className="h-5 w-5" />
+                          <span className="text-sm">Time Tracking</span>
+                        </div>
+                        <div className="w-10 h-6 bg-white rounded-full relative">
+                          <div className="w-4 h-4 bg-indigo-600 rounded-full absolute top-1 right-1"></div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between bg-white/20 rounded-lg p-3">
+                        <div className="flex items-center space-x-3">
+                          <Users className="h-5 w-5" />
+                          <span className="text-sm">Team Collaboration</span>
+                        </div>
+                        <div className="w-10 h-6 bg-white rounded-full relative">
+                          <div className="w-4 h-4 bg-indigo-600 rounded-full absolute top-1 right-1"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </Card>
             </div>
 
-            {/* Recent Tasks */}
-            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
-              <CardHeader className="bg-gradient-to-r from-emerald-600/10 to-green-600/10 rounded-t-lg">
-                <CardTitle className="flex items-center text-lg">
-                  <div className="p-2 bg-emerald-600/10 rounded-lg mr-3">
-                    <Calendar className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  Recent Tasks
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                {recentTasks.length > 0 ? (
+            {/* Bottom Feature Grid */}
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Plays well with others & Replaces them entirely */}
+              <div className="grid gap-6">
+                <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-600 to-pink-600 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300">
                   <div className="space-y-4">
-                    {recentTasks.map((task) => (
-                      <div key={task.id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl hover:shadow-md transition-all duration-200 border border-gray-200/50">
-                        <div className={`w-4 h-4 rounded-full shadow-sm ${
-                          task.status === 'done' ? 'bg-emerald-500' :
-                          task.status === 'in-progress' ? 'bg-amber-500' : 'bg-gray-400'
-                        }`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-900 truncate mb-1">
-                            {task.title}
-                          </p>
-                          <div className="flex items-center space-x-2">
-                            <Badge 
-                              variant="secondary" 
-                              className={`text-xs px-2 py-1 ${
-                                task.status === 'done' ? 'bg-emerald-100 text-emerald-700' :
-                                task.status === 'in-progress' ? 'bg-amber-100 text-amber-700' : 
-                                'bg-gray-100 text-gray-700'
-                              }`}
-                            >
-                              {task.status.replace('-', ' ')}
-                            </Badge>
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs px-2 py-1 ${
-                                task.priority === 'high' ? 'border-red-300 text-red-700' :
-                                task.priority === 'medium' ? 'border-amber-300 text-amber-700' :
-                                'border-gray-300 text-gray-700'
-                              }`}
-                            >
-                              {task.priority}
-                            </Badge>
-                          </div>
+                    <h3 className="text-2xl font-bold">Plays well with others</h3>
+                    <p className="text-purple-100">
+                      Easily integrates with the tools you already use.
+                    </p>
+                    <div className="flex flex-wrap gap-3 mt-6">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">G</span>
+                      </div>
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">S</span>
+                      </div>
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">Z</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300">
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-bold">Replaces them entirely</h3>
+                    <p className="text-blue-100">
+                      Eliminate app sprawl and reduce software spend.
+                    </p>
+                    <div className="flex items-center space-x-4 mt-6">
+                      <div className="text-3xl font-bold">{workspaces.length}</div>
+                      <div className="text-blue-100">Active Workspaces</div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Search everything */}
+              <Card className="border-0 shadow-xl bg-gray-900 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300">
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-bold">Search everything</h3>
+                  <p className="text-gray-300">
+                    Find any file in ClickUp, a connected app, or your local drive, from one place.
+                  </p>
+                  
+                  {/* Mock search results */}
+                  <div className="space-y-4 mt-8">
+                    {recentTasks.slice(0, 3).map((task) => (
+                      <div key={task.id} className="flex items-center space-x-3 p-3 bg-gray-800 rounded-lg">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                          <Target className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{task.title}</div>
+                          <div className="text-xs text-gray-400 capitalize">{task.status.replace('-', ' ')} • {task.priority} priority</div>
                         </div>
                       </div>
                     ))}
+                    {recentTasks.length === 0 && (
+                      <div className="text-center py-8">
+                        <Calendar className="mx-auto h-12 w-12 text-gray-600 mb-4" />
+                        <p className="text-gray-400">No tasks to display</p>
+                        <CreateWorkspaceModal>
+                          <Button variant="outline" className="mt-4 border-gray-600 text-gray-300 hover:bg-gray-800">
+                            Create Your First Workspace
+                          </Button>
+                        </CreateWorkspaceModal>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <Calendar className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500">No recent tasks</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-purple-600/10 to-indigo-600/10 rounded-t-lg">
-              <CardTitle className="flex items-center text-lg">
-                <div className="p-2 bg-purple-600/10 rounded-lg mr-3">
-                  <TrendingUp className="h-5 w-5 text-purple-600" />
                 </div>
-                Quick Actions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid md:grid-cols-3 gap-6">
-                <Button 
-                  variant="outline" 
-                  className="h-20 flex flex-col items-center justify-center space-y-2 border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 group"
-                >
-                  <Plus className="h-6 w-6 text-blue-600 group-hover:scale-110 transition-transform" />
-                  <span className="font-semibold text-blue-600">Create Task</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="h-20 flex flex-col items-center justify-center space-y-2 border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-200 group"
-                >
-                  <FolderOpen className="h-6 w-6 text-emerald-600 group-hover:scale-110 transition-transform" />
-                  <span className="font-semibold text-emerald-600">Browse Workspaces</span>
-                </Button>
-                {user?.role === 'admin' && (
-                  <Button 
-                    variant="outline" 
-                    className="h-20 flex flex-col items-center justify-center space-y-2 border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 transition-all duration-200 group"
-                  >
-                    <BarChart3 className="h-6 w-6 text-purple-600 group-hover:scale-110 transition-transform" />
-                    <span className="font-semibold text-purple-600">View Analytics</span>
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="bg-gradient-to-br from-blue-600 to-purple-600 px-12 py-20">
+          <div className="max-w-4xl mx-auto text-center text-white">
+            <h2 className="text-4xl font-bold mb-6">
+              Ready to Transform Your Team's Productivity?
+            </h2>
+            <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
+              Join teams who've replaced WhatsApp chaos with organized, trackable workflows
+            </p>
+            <CreateWorkspaceModal>
+              <Button 
+                size="lg" 
+                variant="secondary"
+                className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                Start Your Free Account
+              </Button>
+            </CreateWorkspaceModal>
+          </div>
+        </div>
+
+        {/* Trusted by section */}
+        <div className="px-12 py-16 bg-gray-50">
+          <div className="max-w-7xl mx-auto text-center">
+            <p className="text-gray-600 mb-8">Trusted by the world's leading businesses</p>
+            <div className="flex items-center justify-center space-x-12 opacity-60">
+              <div className="text-2xl font-bold text-gray-400">Microsoft</div>
+              <div className="text-2xl font-bold text-gray-400">Google</div>
+              <div className="text-2xl font-bold text-gray-400">Spotify</div>
+              <div className="text-2xl font-bold text-gray-400">Airbnb</div>
+              <div className="text-2xl font-bold text-gray-400">Nike</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
