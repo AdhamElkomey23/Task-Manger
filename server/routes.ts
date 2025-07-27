@@ -213,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/workspaces', isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.post('/api/workspaces', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertWorkspaceSchema.parse({
         ...req.body,
