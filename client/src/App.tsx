@@ -12,7 +12,7 @@ import Inbox from "@/pages/inbox";
 import Team from "@/pages/team";
 import Data from "@/pages/data";
 import Analysis from "@/pages/analysis";
-import MyTasks from "@/pages/my-tasks";
+import CreateTask from "@/pages/create-task";
 import WorkspaceBoard from "@/pages/workspace-board";
 import AdminAnalytics from "@/pages/admin-analytics";
 import AdminUsers from "@/pages/admin-users";
@@ -37,7 +37,7 @@ function Router() {
           <Route path="/team" component={Team} />
           <Route path="/data" component={Data} />
           <Route path="/analysis" component={Analysis} />
-          <Route path="/my-tasks" component={MyTasks} />
+          <Route path="/create-task" component={CreateTask} />
           <Route path="/workspace/:id" component={WorkspaceBoard} />
           <Route path="/admin/analytics" component={AdminAnalytics} />
           <Route path="/admin/users" component={AdminUsers} />

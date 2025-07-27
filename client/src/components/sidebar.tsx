@@ -127,14 +127,14 @@ export default function Sidebar() {
               </a>
             </Link>
             
-            <Link href="/my-tasks">
+            <Link href="/create-task">
               <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
-                isActive("/my-tasks") 
+                isActive("/create-task") 
                   ? "text-blue-600 bg-blue-50" 
                   : "text-gray-700 hover:bg-gray-100"
               }`}>
-                <User className="mr-3 h-5 w-5" />
-                My Tasks
+                <Plus className="mr-3 h-5 w-5" />
+                Create Task
               </a>
             </Link>
             

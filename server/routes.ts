@@ -40,11 +40,18 @@ const upload = multer({
     fileSize: 20 * 1024 * 1024, // 20MB
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+    const allowedTypes = [
+      'image/png', 'image/jpeg', 'image/jpg', 'image/gif',
+      'application/pdf',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/zip', 'application/x-rar-compressed'
+    ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only PNG, JPG, and PDF files are allowed.'));
+      cb(new Error('Invalid file type. Only images, PDFs, Office documents, and archives are allowed.'));
     }
   },
 });
@@ -91,6 +98,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session middleware
   app.set("trust proxy", 1);
   app.use(getSession());
+
+  // Serve uploaded files
+  app.use('/uploads', express.static(uploadDir));
 
   // Register route
   app.post("/api/auth/register", async (req, res) => {
@@ -284,6 +294,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/workspaces/:id/members', isAuthenticated, async (req: any, res) => {
+    try {
+      const workspaceId = parseInt(req.params.id);
+      const members = await storage.getWorkspaceMembers(workspaceId);
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching workspace members:", error);
+      res.status(500).json({ message: "Failed to fetch workspace members" });
+    }
+  });
+
   // Task routes
   app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
     try {
@@ -297,14 +318,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/tasks', isAuthenticated, async (req: any, res) => {
+  app.post('/api/tasks', isAuthenticated, upload.array('attachments', 10), async (req: any, res) => {
     try {
-      const data = insertTaskSchema.parse({
-        ...req.body,
+      // Parse task data
+      const taskData = {
+        title: req.body.title,
+        description: req.body.description,
+        priority: req.body.priority,
+        workspaceId: parseInt(req.body.workspaceId),
+        assigneeId: req.body.assigneeId,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
         createdBy: req.session.userId,
-      });
-      const task = await storage.createTask(data);
-      res.json(task);
+      };
+
+      // Validate task data
+      const validatedTaskData = insertTaskSchema.parse(taskData);
+      
+      // Create the task
+      const task = await storage.createTask(validatedTaskData);
+
+      // Handle file attachments
+      const files = req.files as Express.Multer.File[];
+      if (files && files.length > 0) {
+        for (const file of files) {
+          const fileUrl = `/uploads/${file.filename}`;
+          await storage.createAttachment({
+            taskId: task.id,
+            fileName: file.filename,
+            originalName: file.originalname,
+            fileUrl,
+            fileType: file.mimetype,
+            fileSize: file.size,
+            uploadedBy: req.session.userId,
+          });
+        }
+      }
+
+      // Handle URL attachments
+      const urls = req.body.urls;
+      if (urls) {
+        const urlArray = Array.isArray(urls) ? urls : [urls];
+        for (const url of urlArray) {
+          if (url && url.trim()) {
+            // Create a simple attachment record for URLs
+            await storage.createAttachment({
+              taskId: task.id,
+              fileName: url,
+              originalName: url,
+              fileUrl: url,
+              fileType: 'url',
+              fileSize: 0,
+              uploadedBy: req.session.userId,
+            });
+          }
+        }
+      }
+
+      // Fetch the complete task with attachments
+      const completeTask = await storage.getTask(task.id);
+      res.json(completeTask);
     } catch (error) {
       console.error("Error creating task:", error);
       if (error instanceof z.ZodError) {
@@ -407,9 +479,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to upload file" });
     }
   });
-
-  // Serve uploaded files
-  app.use('/uploads', express.static(uploadDir));
 
   // Analytics routes (admin only)
   app.get('/api/analytics', isAuthenticated, requireAdmin, async (req: any, res) => {
