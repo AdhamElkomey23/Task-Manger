@@ -38,9 +38,19 @@ import {
   Plus,
   CheckCircle,
   Clock,
-  Target
+  Target,
+  Briefcase,
+  Palette,
+  TrendingUp,
+  Settings,
+  Users,
+  Code,
+  Megaphone,
+  HeadphonesIcon,
+  Building
 } from "lucide-react";
 import Sidebar from "@/components/sidebar";
+import CreateWorkspaceModal from "@/components/create-workspace-modal";
 import type { User as UserType, WorkspaceWithDetails } from "@shared/schema";
 
 // Form validation schema
@@ -76,6 +86,7 @@ export default function CreateTask() {
   const [attachedUrls, setAttachedUrls] = useState<string[]>([]);
   const [newUrl, setNewUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
 
   const form = useForm<CreateTaskForm>({
     resolver: zodResolver(createTaskSchema),
@@ -193,6 +204,35 @@ export default function CreateTask() {
       case "low": return "bg-green-100 text-green-800 border-green-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
+  };
+
+  const getWorkspaceIcon = (iconName: string) => {
+    const iconMap: Record<string, any> = {
+      briefcase: Briefcase,
+      palette: Palette,
+      "trending-up": TrendingUp,
+      settings: Settings,
+      users: Users,
+      code: Code,
+      megaphone: Megaphone,
+      headphones: HeadphonesIcon,
+      building: Building,
+    };
+    return iconMap[iconName] || Building;
+  };
+
+  const getWorkspaceColorClass = (color: string) => {
+    const colorMap: Record<string, string> = {
+      blue: "bg-blue-500",
+      green: "bg-green-500",
+      purple: "bg-purple-500",
+      red: "bg-red-500",
+      orange: "bg-orange-500",
+      pink: "bg-pink-500",
+      indigo: "bg-indigo-500",
+      teal: "bg-teal-500",
+    };
+    return colorMap[color] || "bg-gray-500";
   };
 
   if (isLoading || !isAuthenticated) return null;
@@ -346,7 +386,19 @@ export default function CreateTask() {
                       name="workspaceId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Workspace *</FormLabel>
+                          <div className="flex items-center justify-between">
+                            <FormLabel>Workspace *</FormLabel>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowCreateWorkspace(true)}
+                              className="h-8 text-xs"
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add Workspace
+                            </Button>
+                          </div>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
@@ -354,11 +406,32 @@ export default function CreateTask() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {workspaces.map((workspace) => (
-                                <SelectItem key={workspace.id} value={workspace.id.toString()}>
-                                  {workspace.name}
-                                </SelectItem>
-                              ))}
+                              {workspaces.length === 0 ? (
+                                <div className="p-4 text-center text-gray-500">
+                                  <Building className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                                  <p className="text-sm">No workspaces yet</p>
+                                  <p className="text-xs">Create your first workspace to get started</p>
+                                </div>
+                              ) : (
+                                workspaces.map((workspace) => {
+                                  const IconComponent = getWorkspaceIcon(workspace.icon || "building");
+                                  return (
+                                    <SelectItem key={workspace.id} value={workspace.id.toString()}>
+                                      <div className="flex items-center space-x-3">
+                                        <div className={`p-1 rounded ${getWorkspaceColorClass(workspace.color || "gray")}`}>
+                                          <IconComponent className="h-3 w-3 text-white" />
+                                        </div>
+                                        <div>
+                                          <div className="font-medium">{workspace.name}</div>
+                                          {workspace.description && (
+                                            <div className="text-xs text-gray-500">{workspace.description}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -567,6 +640,12 @@ export default function CreateTask() {
               </Form>
             </CardContent>
           </Card>
+
+          {/* Create Workspace Modal */}
+          <CreateWorkspaceModal 
+            open={showCreateWorkspace} 
+            onOpenChange={setShowCreateWorkspace} 
+          />
         </div>
       </div>
     </div>

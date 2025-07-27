@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Archive, Users } from "lucide-react";
-import { CreateWorkspaceModal } from "@/components/create-workspace-modal";
+import CreateWorkspaceModal from "@/components/create-workspace-modal";
 import type { WorkspaceWithDetails } from "@shared/schema";
 
 export default function AdminWorkspaces() {

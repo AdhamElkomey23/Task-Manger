@@ -1,15 +1,21 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -18,175 +24,214 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { insertWorkspaceSchema } from "@shared/schema";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Briefcase, 
+  Palette, 
+  TrendingUp, 
+  Settings, 
+  Users, 
+  Code, 
+  Megaphone,
+  HeadphonesIcon,
+  Building
+} from "lucide-react";
 
-const formSchema = insertWorkspaceSchema.omit({ ownerId: true });
+const createWorkspaceSchema = z.object({
+  name: z.string().min(1, "Workspace name is required").max(100, "Name too long"),
+  description: z.string().optional(),
+  color: z.string().min(1, "Please select a color"),
+  icon: z.string().min(1, "Please select an icon"),
+});
 
-type FormData = z.infer<typeof formSchema>;
+type CreateWorkspaceForm = z.infer<typeof createWorkspaceSchema>;
 
 interface CreateWorkspaceModalProps {
-  children: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const workspaceColors = [
-  "#3b82f6", // blue
-  "#ef4444", // red
-  "#10b981", // emerald
-  "#f59e0b", // amber
-  "#8b5cf6", // violet
-  "#06b6d4", // cyan
-  "#f97316", // orange
-  "#84cc16", // lime
-];
-
 const workspaceIcons = [
-  "fas fa-briefcase",
-  "fas fa-users",
-  "fas fa-rocket",
-  "fas fa-lightbulb",
-  "fas fa-cog",
-  "fas fa-chart-line",
-  "fas fa-home",
-  "fas fa-star",
+  { value: "briefcase", label: "Business", icon: Briefcase },
+  { value: "palette", label: "Design", icon: Palette },
+  { value: "trending-up", label: "Sales", icon: TrendingUp },
+  { value: "settings", label: "Operations", icon: Settings },
+  { value: "users", label: "HR", icon: Users },
+  { value: "code", label: "Development", icon: Code },
+  { value: "megaphone", label: "Marketing", icon: Megaphone },
+  { value: "headphones", label: "Support", icon: HeadphonesIcon },
+  { value: "building", label: "Management", icon: Building },
 ];
 
-export function CreateWorkspaceModal({ children }: CreateWorkspaceModalProps) {
-  const [open, setOpen] = useState(false);
+const workspaceColors = [
+  { value: "blue", label: "Blue", class: "bg-blue-500" },
+  { value: "green", label: "Green", class: "bg-green-500" },
+  { value: "purple", label: "Purple", class: "bg-purple-500" },
+  { value: "red", label: "Red", class: "bg-red-500" },
+  { value: "orange", label: "Orange", class: "bg-orange-500" },
+  { value: "pink", label: "Pink", class: "bg-pink-500" },
+  { value: "indigo", label: "Indigo", class: "bg-indigo-500" },
+  { value: "teal", label: "Teal", class: "bg-teal-500" },
+];
+
+export default function CreateWorkspaceModal({ open, onOpenChange }: CreateWorkspaceModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<CreateWorkspaceForm>({
+    resolver: zodResolver(createWorkspaceSchema),
     defaultValues: {
       name: "",
       description: "",
-      color: workspaceColors[0],
-      icon: workspaceIcons[0],
+      color: "",
+      icon: "",
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      return apiRequest(`/api/workspaces`, {
-        method: "POST",
+  const createWorkspaceMutation = useMutation({
+    mutationFn: async (data: CreateWorkspaceForm) => {
+      const response = await fetch('/api/workspaces', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data),
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/workspaces"] });
       toast({
         title: "Success",
-        description: "Workspace created successfully",
+        description: "Workspace created successfully!",
       });
-      setOpen(false);
+      
       form.reset();
+      onOpenChange(false);
+      
+      // Invalidate workspaces query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/workspaces"] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create workspace",
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    createMutation.mutate(data);
+  const onSubmit = async (data: CreateWorkspaceForm) => {
+    await createWorkspaceMutation.mutateAsync(data);
   };
 
+  const selectedIcon = workspaceIcons.find(icon => icon.value === form.watch("icon"));
+  const selectedColor = workspaceColors.find(color => color.value === form.watch("color"));
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Create New Workspace</DialogTitle>
+          <DialogDescription>
+            Create a workspace to organize your tasks by category or department.
+          </DialogDescription>
         </DialogHeader>
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Workspace Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter workspace name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter workspace description"
-                      {...field}
-                      value={field.value || ""}
-                      className="resize-none"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Color</FormLabel>
-                  <FormControl>
-                    <div className="flex flex-wrap gap-2">
-                      {workspaceColors.map((color) => (
-                        <button
-                          key={color}
-                          type="button"
-                          className={`w-8 h-8 rounded-lg border-2 ${
-                            field.value === color ? "border-gray-400" : "border-gray-200"
-                          }`}
-                          style={{ backgroundColor: color }}
-                          onClick={() => field.onChange(color)}
-                        />
-                      ))}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Workspace Preview */}
+            {(form.watch("name") || selectedIcon || selectedColor) && (
+              <div className="p-4 border rounded-lg bg-gray-50">
+                <p className="text-sm font-medium text-gray-600 mb-2">Preview:</p>
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${selectedColor?.class || 'bg-gray-300'}`}>
+                    {selectedIcon ? (
+                      <selectedIcon.icon className="h-5 w-5 text-white" />
+                    ) : (
+                      <Building className="h-5 w-5 text-white" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">
+                      {form.watch("name") || "Workspace Name"}
                     </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <div className="text-sm text-gray-500">
+                      {form.watch("description") || "No description"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Workspace Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Design Team, Sales Department" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Brief description of what this workspace is for..."
+                        className="min-h-20"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Icon Selection */}
             <FormField
               control={form.control}
               name="icon"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Icon</FormLabel>
+                  <FormLabel>Choose Icon *</FormLabel>
                   <FormControl>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {workspaceIcons.map((icon) => (
                         <button
-                          key={icon}
+                          key={icon.value}
                           type="button"
-                          className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center ${
-                            field.value === icon 
-                              ? "border-blue-400 bg-blue-50" 
-                              : "border-gray-200 hover:border-gray-300"
+                          onClick={() => field.onChange(icon.value)}
+                          className={`p-3 border rounded-lg flex flex-col items-center space-y-1 hover:bg-gray-50 transition-colors ${
+                            field.value === icon.value 
+                              ? "border-blue-500 bg-blue-50" 
+                              : "border-gray-200"
                           }`}
-                          onClick={() => field.onChange(icon)}
                         >
-                          <i className={`${icon} text-gray-600`}></i>
+                          <icon.icon className="h-5 w-5 text-gray-600" />
+                          <span className="text-xs text-gray-600">{icon.label}</span>
                         </button>
                       ))}
                     </div>
@@ -196,18 +241,53 @@ export function CreateWorkspaceModal({ children }: CreateWorkspaceModalProps) {
               )}
             />
 
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
+            {/* Color Selection */}
+            <FormField
+              control={form.control}
+              name="color"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Choose Color *</FormLabel>
+                  <FormControl>
+                    <div className="grid grid-cols-4 gap-2">
+                      {workspaceColors.map((color) => (
+                        <button
+                          key={color.value}
+                          type="button"
+                          onClick={() => field.onChange(color.value)}
+                          className={`p-3 border rounded-lg flex flex-col items-center space-y-1 hover:opacity-80 transition-opacity ${
+                            field.value === color.value 
+                              ? "border-gray-900 border-2" 
+                              : "border-gray-200"
+                          }`}
+                        >
+                          <div className={`w-6 h-6 rounded-full ${color.class}`}></div>
+                          <span className="text-xs text-gray-600">{color.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating..." : "Create Workspace"}
+              <Button 
+                type="submit" 
+                disabled={createWorkspaceMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {createWorkspaceMutation.isPending ? "Creating..." : "Create Workspace"}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

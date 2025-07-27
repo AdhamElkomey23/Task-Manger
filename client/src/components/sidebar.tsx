@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import { CreateWorkspaceModal } from "./create-workspace-modal";
+import CreateWorkspaceModal from "./create-workspace-modal";
 import { 
   CheckSquare, 
   User, 
@@ -18,7 +18,14 @@ import {
   Home,
   Inbox,
   Database,
-  PieChart
+  PieChart,
+  Briefcase,
+  Palette,
+  TrendingUp,
+  Settings,
+  Code,
+  Megaphone,
+  HeadphonesIcon
 } from "lucide-react";
 import type { WorkspaceWithDetails } from "@shared/schema";
 
@@ -37,6 +44,35 @@ export default function Sidebar() {
   };
 
   const isActive = (path: string) => location === path;
+
+  const getWorkspaceIcon = (iconName: string) => {
+    const iconMap: Record<string, any> = {
+      briefcase: Briefcase,
+      palette: Palette,
+      "trending-up": TrendingUp,
+      settings: Settings,
+      users: Users,
+      code: Code,
+      megaphone: Megaphone,
+      headphones: HeadphonesIcon,
+      building: Building,
+    };
+    return iconMap[iconName] || Building;
+  };
+
+  const getWorkspaceColorClass = (color: string) => {
+    const colorMap: Record<string, string> = {
+      blue: "bg-blue-500",
+      green: "bg-green-500",
+      purple: "bg-purple-500",
+      red: "bg-red-500",
+      orange: "bg-orange-500",
+      pink: "bg-pink-500",
+      indigo: "bg-indigo-500",
+      teal: "bg-teal-500",
+    };
+    return colorMap[color] || "bg-gray-500";
+  };
 
   return (
     <>
@@ -157,28 +193,39 @@ export default function Sidebar() {
               </div>
               
               <div className="space-y-1">
-                {workspaces.map((workspace) => (
-                  <Link key={workspace.id} href={`/workspace/${workspace.id}`}>
-                    <a className={`flex items-center px-3 py-2 text-sm rounded-lg ${
-                      location.startsWith(`/workspace/${workspace.id}`)
-                        ? "text-blue-600 bg-blue-50"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}>
-                      <div 
-                        className="w-3 h-3 rounded mr-3"
-                        style={{ backgroundColor: workspace.color || '#3b82f6' }}
-                      />
-                      <span className="flex-1 truncate">{workspace.name}</span>
-                      <span className="text-xs text-gray-500">
-                        {workspace.taskCount}
-                      </span>
-                    </a>
-                  </Link>
-                ))}
+                {workspaces.map((workspace) => {
+                  const IconComponent = getWorkspaceIcon(workspace.icon || "building");
+                  return (
+                    <Link key={workspace.id} href={`/workspace/${workspace.id}`}>
+                      <a className={`flex items-center px-3 py-2 text-sm rounded-lg ${
+                        location.startsWith(`/workspace/${workspace.id}`)
+                          ? "text-blue-600 bg-blue-50"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}>
+                        <div className={`p-1.5 rounded mr-3 ${getWorkspaceColorClass(workspace.color || "blue")}`}>
+                          <IconComponent className="h-3 w-3 text-white" />
+                        </div>
+                        <span className="flex-1 truncate">{workspace.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {workspace.taskCount || 0}
+                        </span>
+                      </a>
+                    </Link>
+                  );
+                })}
                 
                 {workspaces.length === 0 && (
-                  <div className="px-3 py-2 text-xs text-gray-500">
-                    No workspaces yet
+                  <div className="px-3 py-4 text-center text-gray-500">
+                    <Building className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                    <p className="text-xs">No workspaces yet</p>
+                    {user?.role === "admin" && (
+                      <button 
+                        onClick={() => setShowCreateWorkspace(true)}
+                        className="text-blue-600 hover:text-blue-700 text-xs mt-1"
+                      >
+                        Create your first workspace
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -242,11 +289,10 @@ export default function Sidebar() {
         </div>
       </div>
       
-      {showCreateWorkspace && (
-        <CreateWorkspaceModal>
-          <div />
-        </CreateWorkspaceModal>
-      )}
+      <CreateWorkspaceModal 
+        open={showCreateWorkspace} 
+        onOpenChange={setShowCreateWorkspace} 
+      />
     </>
   );
 }
