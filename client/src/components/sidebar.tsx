@@ -174,22 +174,28 @@ export default function Sidebar() {
               </a>
             </Link>
             
+            <button
+              onClick={() => setShowCreateWorkspace(true)}
+              className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"
+            >
+              <Folder className="mr-3 h-5 w-5" />
+              Create Workspace
+            </button>
+            
             {/* Workspaces Section */}
             <div className="pt-4">
               <div className="flex items-center justify-between px-3 py-2">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Workspaces
                 </h3>
-                {user?.role === "admin" && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => setShowCreateWorkspace(true)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => setShowCreateWorkspace(true)}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
               </div>
               
               <div className="space-y-1">
@@ -218,14 +224,12 @@ export default function Sidebar() {
                   <div className="px-3 py-4 text-center text-gray-500">
                     <Building className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                     <p className="text-xs">No workspaces yet</p>
-                    {user?.role === "admin" && (
-                      <button 
-                        onClick={() => setShowCreateWorkspace(true)}
-                        className="text-blue-600 hover:text-blue-700 text-xs mt-1"
-                      >
-                        Create your first workspace
-                      </button>
-                    )}
+                    <button 
+                      onClick={() => setShowCreateWorkspace(true)}
+                      className="text-blue-600 hover:text-blue-700 text-xs mt-1"
+                    >
+                      Create your first workspace
+                    </button>
                   </div>
                 )}
               </div>
