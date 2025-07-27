@@ -518,7 +518,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Hash the password
-      const bcrypt = require('bcrypt');
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       
       const user = await storage.createUser({
@@ -542,7 +541,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Hash password if provided
       if (updates.password) {
-        const bcrypt = require('bcrypt');
         updates.password = await bcrypt.hash(updates.password, 10);
       }
       
