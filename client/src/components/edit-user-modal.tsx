@@ -79,10 +79,7 @@ export function EditUserModal({ user, open, onOpenChange }: EditUserModalProps) 
       if (!updateData.password) {
         delete updateData.password;  // Don't update password if empty
       }
-      return apiRequest(`/api/users/${user?.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(updateData),
-      });
+      return apiRequest("PATCH", `/api/users/${user?.id}`, updateData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
