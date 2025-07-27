@@ -41,9 +41,10 @@ export default function Login() {
       }, 1000);
     },
     onError: (error: any) => {
+      console.error("Login error:", error);
       toast({
-        title: "Login failed",
-        description: error.message || "Please check your email and password.",
+        title: "Login Failed",
+        description: error.message || "Wrong email or password. Please check your credentials.",
         variant: "destructive",
       });
     },
