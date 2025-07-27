@@ -495,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User management routes (admin only)
+  // User management routes
   app.get('/api/users', isAuthenticated, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
@@ -506,12 +506,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const userData = req.body;
+      
+      // Check if user with this email already exists
+      const existingUsers = await storage.getAllUsers();
+      const existingUser = existingUsers.find(u => u.email === userData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Hash the password
+      const bcrypt = require('bcrypt');
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+      });
+      
+      // Don't return the password in the response
+      const { password, ...userResponse } = user;
+      res.json(userResponse);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
   app.patch('/api/users/:id', isAuthenticated, async (req: any, res) => {
     try {
       const id = req.params.id;
       const updates = req.body;
+      
+      // Hash password if provided
+      if (updates.password) {
+        const bcrypt = require('bcrypt');
+        updates.password = await bcrypt.hash(updates.password, 10);
+      }
+      
       const user = await storage.updateUser(id, updates);
-      res.json(user);
+      
+      // Don't return the password in the response
+      const { password, ...userResponse } = user;
+      res.json(userResponse);
     } catch (error) {
       console.error("Error updating user:", error);
       res.status(500).json({ message: "Failed to update user" });

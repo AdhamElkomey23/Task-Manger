@@ -28,7 +28,7 @@ export interface IStorage {
   // User operations (authentication)
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: { email: string; password: string; firstName?: string; lastName?: string }): Promise<User>;
+  createUser(user: { email: string; password: string; firstName?: string; lastName?: string; role?: string }): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Workspace operations
@@ -83,7 +83,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(user: { email: string; password: string; firstName?: string; lastName?: string }): Promise<User> {
+  async createUser(user: { email: string; password: string; firstName?: string; lastName?: string; role?: string }): Promise<User> {
     const [newUser] = await db
       .insert(users)
       .values({

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -29,28 +28,30 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import type { User } from "@shared/schema";
 
-const createUserSchema = z.object({
+const editUserSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Valid email is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().optional(),
   role: z.enum(["admin", "worker"]),
 });
 
-type CreateUserForm = z.infer<typeof createUserSchema>;
+type EditUserForm = z.infer<typeof editUserSchema>;
 
-interface CreateUserModalProps {
-  children: React.ReactNode;
+interface EditUserModalProps {
+  user: User | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function CreateUserModal({ children }: CreateUserModalProps) {
-  const [open, setOpen] = useState(false);
+export function EditUserModal({ user, open, onOpenChange }: EditUserModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const form = useForm<CreateUserForm>({
-    resolver: zodResolver(createUserSchema),
+  const form = useForm<EditUserForm>({
+    resolver: zodResolver(editUserSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -60,41 +61,56 @@ export function CreateUserModal({ children }: CreateUserModalProps) {
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: CreateUserForm) => {
-      return apiRequest(`/api/users`, {
-        method: "POST",
-        body: JSON.stringify(data),
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        password: "",
+        role: user.role || "worker",
+      });
+    }
+  }, [user, form]);
+
+  const editMutation = useMutation({
+    mutationFn: async (data: EditUserForm) => {
+      const updateData = { ...data };
+      if (!updateData.password) {
+        delete updateData.password;  // Don't update password if empty
+      }
+      return apiRequest(`/api/users/${user?.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(updateData),
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Success",
-        description: "User created successfully",
+        description: "User updated successfully",
       });
-      setOpen(false);
+      onOpenChange(false);
       form.reset();
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create user",
+        description: error.message || "Failed to update user",
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = (data: CreateUserForm) => {
-    createMutation.mutate(data);
+  const onSubmit = (data: EditUserForm) => {
+    editMutation.mutate(data);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Worker</DialogTitle>
+          <DialogTitle>Edit User</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -147,9 +163,9 @@ export function CreateUserModal({ children }: CreateUserModalProps) {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>New Password (optional)</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Enter password" {...field} />
+                    <Input type="password" placeholder="Leave empty to keep current password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -162,7 +178,7 @@ export function CreateUserModal({ children }: CreateUserModalProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select role" />
@@ -182,12 +198,12 @@ export function CreateUserModal({ children }: CreateUserModalProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={() => onOpenChange(false)}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating..." : "Create User"}
+              <Button type="submit" disabled={editMutation.isPending}>
+                {editMutation.isPending ? "Updating..." : "Update User"}
               </Button>
             </div>
           </form>

@@ -10,14 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Plus, Edit, Trash2 } from "lucide-react";
-// import CreateUserModal from "@/components/create-user-modal";
+import { CreateUserModal } from "@/components/create-user-modal";
+import { EditUserModal } from "@/components/edit-user-modal";
 import type { User } from "@shared/schema";
 
 export default function AdminUsers() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -67,9 +69,14 @@ export default function AdminUsers() {
   );
 
   const handleDeleteUser = async (userId: string) => {
-    if (confirm("Are you sure you want to delete this user?")) {
+    if (confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
       deleteUserMutation.mutate(userId);
     }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setShowEditModal(true);
   };
 
   if (isLoading || !isAuthenticated) return null;
@@ -83,8 +90,8 @@ export default function AdminUsers() {
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-              <p className="text-gray-600 mt-1">Manage team members and their access permissions</p>
+              <h1 className="text-2xl font-bold text-gray-900">Team Management</h1>
+              <p className="text-gray-600 mt-1">Add workers with email/password to access your workspace</p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="relative">
@@ -97,10 +104,12 @@ export default function AdminUsers() {
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               </div>
-              <Button onClick={() => setShowCreateUser(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add User
-              </Button>
+              <CreateUserModal>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Worker
+                </Button>
+              </CreateUserModal>
             </div>
           </div>
         </header>
@@ -146,7 +155,11 @@ export default function AdminUsers() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
@@ -175,9 +188,10 @@ export default function AdminUsers() {
         </div>
       </div>
       
-      <CreateUserModal 
-        open={showCreateUser} 
-        onOpenChange={setShowCreateUser}
+      <EditUserModal
+        user={editingUser}
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
       />
     </div>
   );
