@@ -5,6 +5,7 @@ import {
   comments,
   attachments,
   workspaceMembers,
+  files,
   type User,
   type UpsertUser,
   type InsertWorkspace,
@@ -17,6 +18,8 @@ import {
   type Attachment,
   type InsertWorkspaceMember,
   type WorkspaceMember,
+  type InsertFile,
+  type File,
   type TaskWithDetails,
   type WorkspaceWithDetails,
 } from "@shared/schema";
@@ -70,6 +73,11 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUser(id: string, updates: Partial<UpsertUser>): Promise<User>;
   deleteUser(id: string): Promise<void>;
+  
+  // File management
+  getAllFiles(): Promise<(File & { uploader: User })[]>;
+  createFile(file: InsertFile): Promise<File>;
+  deleteFile(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -458,6 +466,48 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tasks.assigneeId, id));
     
     await db.delete(users).where(eq(users.id, id));
+  }
+
+  async getAllFiles(): Promise<(File & { uploader: User })[]> {
+    const result = await db
+      .select({
+        file: files,
+        uploader: users,
+      })
+      .from(files)
+      .innerJoin(users, eq(files.uploadedBy, users.id))
+      .orderBy(desc(files.createdAt));
+
+    return result.map(row => ({
+      ...row.file,
+      uploader: row.uploader,
+    }));
+  }
+
+  async createFile(fileData: InsertFile): Promise<File> {
+    const [newFile] = await db.insert(files).values(fileData).returning();
+    return newFile;
+  }
+
+  async deleteFile(id: number): Promise<void> {
+    // Get file info to delete physical file
+    const [fileInfo] = await db.select().from(files).where(eq(files.id, id));
+    
+    if (fileInfo) {
+      // Delete physical file
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join(process.cwd(), 'uploads', fileInfo.fileName);
+      
+      try {
+        fs.unlinkSync(filePath);
+      } catch (error) {
+        console.log("File not found on disk:", filePath);
+      }
+    }
+    
+    // Delete from database
+    await db.delete(files).where(eq(files.id, id));
   }
 }
 

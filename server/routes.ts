@@ -40,19 +40,8 @@ const upload = multer({
     fileSize: 20 * 1024 * 1024, // 20MB
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      'image/png', 'image/jpeg', 'image/jpg', 'image/gif',
-      'application/pdf',
-      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'application/zip', 'application/x-rar-compressed'
-    ];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type. Only images, PDFs, Office documents, and archives are allowed.'));
-    }
+    // Allow any file type for maximum flexibility
+    cb(null, true);
   },
 });
 
@@ -565,6 +554,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete user" });
     }
   });
+
+  // File management routes
+  app.get('/api/files', isAuthenticated, async (req: any, res) => {
+    try {
+      const files = await storage.getAllFiles();
+      res.json(files);
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      res.status(500).json({ message: "Failed to fetch files" });
+    }
+  });
+
+  app.post('/api/files', isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const file = req.file;
+      const { category, description } = req.body;
+      
+      const fileData = {
+        fileName: file.filename,
+        originalName: file.originalname,
+        fileType: file.mimetype,
+        fileSize: file.size,
+        fileUrl: `/uploads/${file.filename}`,
+        category: category || null,
+        description: description || null,
+        uploadedBy: req.session.userId,
+      };
+
+      const savedFile = await storage.createFile(fileData);
+      res.json(savedFile);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      res.status(500).json({ message: "Failed to upload file" });
+    }
+  });
+
+  app.delete('/api/files/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteFile(id);
+      res.json({ message: "File deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      res.status(500).json({ message: "Failed to delete file" });
+    }
+  });
+
+  // Serve uploaded files
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   const httpServer = createServer(app);
   return httpServer;

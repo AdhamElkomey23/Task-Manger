@@ -93,12 +93,27 @@ export const workspaceMembers = pgTable("workspace_members", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const files = pgTable("files", {
+  id: serial("id").primaryKey(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  originalName: varchar("original_name", { length: 255 }).notNull(),
+  fileType: varchar("file_type", { length: 100 }).notNull(),
+  fileSize: integer("file_size").notNull(),
+  fileUrl: text("file_url").notNull(),
+  category: varchar("category", { length: 100 }),
+  description: text("description"),
+  uploadedBy: varchar("uploaded_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   tasks: many(tasks, { relationName: "assignedTasks" }),
   createdTasks: many(tasks, { relationName: "createdTasks" }),
   comments: many(comments),
   attachments: many(attachments),
+  files: many(files),
   workspaceMembers: many(workspaceMembers),
   createdWorkspaces: many(workspaces),
 }));
@@ -153,6 +168,13 @@ export const attachmentsRelations = relations(attachments, ({ one }) => ({
   }),
 }));
 
+export const filesRelations = relations(files, ({ one }) => ({
+  uploader: one(users, {
+    fields: [files.uploadedBy],
+    references: [users.id],
+  }),
+}));
+
 export const workspaceMembersRelations = relations(workspaceMembers, ({ one }) => ({
   workspace: one(workspaces, {
     fields: [workspaceMembers.workspaceId],
@@ -197,6 +219,12 @@ export const insertWorkspaceMemberSchema = createInsertSchema(workspaceMembers).
   createdAt: true,
 });
 
+export const insertFileSchema = createInsertSchema(files).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -210,6 +238,8 @@ export type InsertAttachment = z.infer<typeof insertAttachmentSchema>;
 export type Attachment = typeof attachments.$inferSelect;
 export type InsertWorkspaceMember = z.infer<typeof insertWorkspaceMemberSchema>;
 export type WorkspaceMember = typeof workspaceMembers.$inferSelect;
+export type InsertFile = z.infer<typeof insertFileSchema>;
+export type File = typeof files.$inferSelect;
 
 // Extended types for API responses
 export type TaskWithDetails = Task & {
