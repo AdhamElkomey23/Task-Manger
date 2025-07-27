@@ -35,7 +35,19 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const upload = multer({
-  dest: uploadDir,
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      // Generate unique filename while preserving extension
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      const name = path.basename(file.originalname, ext);
+      const fileName = `${name}-${uniqueSuffix}${ext}`;
+      cb(null, fileName);
+    }
+  }),
   limits: {
     fileSize: 20 * 1024 * 1024, // 20MB
   },
@@ -605,8 +617,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve uploaded files
-  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+  // Serve uploaded files with proper headers for download
+  app.get('/uploads/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(process.cwd(), 'uploads', filename);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "File not found" });
+    }
+    
+    // Get file info from database to set proper download name
+    storage.getAllFiles().then(files => {
+      const fileInfo = files.find(f => f.fileName === filename);
+      if (fileInfo) {
+        res.setHeader('Content-Disposition', `attachment; filename="${fileInfo.originalName}"`);
+      }
+      res.sendFile(filePath);
+    }).catch(() => {
+      // Fallback to serving without database info
+      res.sendFile(filePath);
+    });
+  });
 
   const httpServer = createServer(app);
   return httpServer;

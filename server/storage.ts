@@ -495,8 +495,8 @@ export class DatabaseStorage implements IStorage {
     
     if (fileInfo) {
       // Delete physical file
-      const fs = require('fs');
-      const path = require('path');
+      const fs = await import('fs');
+      const path = await import('path');
       const filePath = path.join(process.cwd(), 'uploads', fileInfo.fileName);
       
       try {
