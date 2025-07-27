@@ -25,8 +25,10 @@ import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 export interface IStorage {
-  // User operations (required for Replit Auth)
+  // User operations (authentication)
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: { email: string; password: string; firstName?: string; lastName?: string }): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Workspace operations
@@ -74,6 +76,25 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(user: { email: string; password: string; firstName?: string; lastName?: string }): Promise<User> {
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        id: crypto.randomUUID(),
+        email: user.email,
+        password: user.password,
+        firstName: user.firstName || null,
+        lastName: user.lastName || null,
+      })
+      .returning();
+    return newUser;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {

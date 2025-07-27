@@ -2,17 +2,31 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { 
   insertWorkspaceSchema,
   insertTaskSchema,
   insertCommentSchema,
+  registerSchema,
+  loginSchema,
   type User,
+  type RegisterInput,
+  type LoginInput,
 } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import bcrypt from "bcrypt";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+
+// Extend session interface
+declare module "express-session" {
+  interface SessionData {
+    userId: string;
+    user: User;
+  }
+}
 
 // File upload configuration
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -35,23 +49,141 @@ const upload = multer({
   },
 });
 
+// Session configuration
+function getSession() {
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false,
+    ttl: sessionTtl,
+    tableName: "sessions",
+  });
+  return session({
+    secret: process.env.SESSION_SECRET || "your-secret-key-here",
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      maxAge: sessionTtl,
+    },
+  });
+}
+
+// Authentication middleware
+function isAuthenticated(req: any, res: any, next: any) {
+  if (req.session && req.session.userId) {
+    return next();
+  }
+  return res.status(401).json({ message: "Unauthorized" });
+}
+
 function requireAdmin(req: any, res: any, next: any) {
-  if (req.user?.claims?.role !== "admin") {
+  if (req.session?.user?.role !== "admin") {
     return res.status(403).json({ message: "Admin access required" });
   }
   next();
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // Setup session middleware
+  app.set("trust proxy", 1);
+  app.use(getSession());
 
-  // Auth routes
+  // Register route
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const validatedData = registerSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+
+      // Create user
+      const user = await storage.createUser({
+        email: validatedData.email,
+        password: hashedPassword,
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+      });
+
+      // Set session
+      req.session.userId = user.id;
+      req.session.user = user;
+
+      // Return user without password
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Registration error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  // Login route
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const validatedData = loginSchema.parse(req.body);
+      
+      // Find user
+      const user = await storage.getUserByEmail(validatedData.email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Check password
+      const isPasswordValid = await bcrypt.compare(validatedData.password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Set session
+      req.session.userId = user.id;
+      req.session.user = user;
+
+      // Return user without password
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Login error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Logout route
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Could not log out" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+
+  // Get current user route
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
-      res.json(user);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      // Return user without password
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -61,7 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workspace routes
   app.get('/api/workspaces', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
       const workspaces = await storage.getWorkspaces(userId, user?.role || "worker");
       res.json(workspaces);
@@ -75,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertWorkspaceSchema.parse({
         ...req.body,
-        createdBy: req.user.claims.sub,
+        createdBy: req.session.userId,
       });
       const workspace = await storage.createWorkspace(data);
       res.json(workspace);
@@ -155,7 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Task routes
   app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const workspaceId = req.query.workspaceId ? parseInt(req.query.workspaceId) : undefined;
       const tasks = await storage.getTasks(userId, workspaceId);
       res.json(tasks);
@@ -169,7 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertTaskSchema.parse({
         ...req.body,
-        createdBy: req.user.claims.sub,
+        createdBy: req.session.userId,
       });
       const task = await storage.createTask(data);
       res.json(task);
@@ -232,7 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = insertCommentSchema.parse({
         ...req.body,
         taskId,
-        authorId: req.user.claims.sub,
+        authorId: req.session.userId,
       });
       const comment = await storage.createComment(data);
       res.json(comment);
@@ -266,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileUrl,
         fileType: file.mimetype,
         fileSize: file.size,
-        uploadedBy: req.user.claims.sub,
+        uploadedBy: req.session.userId,
       });
       
       res.json(attachment);

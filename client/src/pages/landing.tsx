@@ -15,11 +15,11 @@ export default function Landing() {
             <span className="text-xl font-bold text-gray-900">TaskFlow</span>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => window.location.href = '/api/login'}>
+            <Button variant="ghost" onClick={() => window.location.href = '/login'}>
               Log In
             </Button>
             <Button 
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => window.location.href = '/signup'}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
               Sign Up
@@ -40,7 +40,7 @@ export default function Landing() {
             </p>
             <Button 
               size="lg" 
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => window.location.href = '/signup'}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
             >
               Get Started. It's FREE →
@@ -245,7 +245,7 @@ export default function Landing() {
           <Button 
             size="lg" 
             variant="secondary"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => window.location.href = '/signup'}
             className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
           >
             Start Your Free Account
