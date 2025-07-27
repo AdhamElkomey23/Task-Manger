@@ -14,7 +14,11 @@ import {
   Users, 
   Building, 
   LogOut,
-  Folder
+  Folder,
+  Home,
+  Inbox,
+  Database,
+  PieChart
 } from "lucide-react";
 import type { WorkspaceWithDetails } from "@shared/schema";
 
@@ -50,7 +54,6 @@ export default function Sidebar() {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center">
               <Avatar className="w-10 h-10">
-                <AvatarImage src={user?.profileImageUrl || undefined} />
                 <AvatarFallback>
                   {user?.firstName?.[0]}{user?.lastName?.[0]}
                 </AvatarFallback>
@@ -68,6 +71,62 @@ export default function Sidebar() {
           
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1">
+            {/* Main Pages */}
+            <Link href="/">
+              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+                isActive("/") 
+                  ? "text-blue-600 bg-blue-50" 
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}>
+                <Home className="mr-3 h-5 w-5" />
+                Home
+              </a>
+            </Link>
+            
+            <Link href="/inbox">
+              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+                isActive("/inbox") 
+                  ? "text-blue-600 bg-blue-50" 
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}>
+                <Inbox className="mr-3 h-5 w-5" />
+                Inbox
+              </a>
+            </Link>
+            
+            <Link href="/team">
+              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+                isActive("/team") 
+                  ? "text-blue-600 bg-blue-50" 
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}>
+                <Users className="mr-3 h-5 w-5" />
+                Team
+              </a>
+            </Link>
+            
+            <Link href="/data">
+              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+                isActive("/data") 
+                  ? "text-blue-600 bg-blue-50" 
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}>
+                <Database className="mr-3 h-5 w-5" />
+                Data
+              </a>
+            </Link>
+            
+            <Link href="/analysis">
+              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+                isActive("/analysis") 
+                  ? "text-blue-600 bg-blue-50" 
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}>
+                <PieChart className="mr-3 h-5 w-5" />
+                Analysis
+              </a>
+            </Link>
+            
             <Link href="/my-tasks">
               <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
                 isActive("/my-tasks") 
@@ -183,10 +242,11 @@ export default function Sidebar() {
         </div>
       </div>
       
-      <CreateWorkspaceModal 
-        open={showCreateWorkspace} 
-        onOpenChange={setShowCreateWorkspace}
-      />
+      {showCreateWorkspace && (
+        <CreateWorkspaceModal>
+          <div />
+        </CreateWorkspaceModal>
+      )}
     </>
   );
 }

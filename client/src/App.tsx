@@ -8,6 +8,10 @@ import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Home from "@/pages/home";
+import Inbox from "@/pages/inbox";
+import Team from "@/pages/team";
+import Data from "@/pages/data";
+import Analysis from "@/pages/analysis";
 import MyTasks from "@/pages/my-tasks";
 import WorkspaceBoard from "@/pages/workspace-board";
 import AdminAnalytics from "@/pages/admin-analytics";
@@ -29,6 +33,10 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Home} />
+          <Route path="/inbox" component={Inbox} />
+          <Route path="/team" component={Team} />
+          <Route path="/data" component={Data} />
+          <Route path="/analysis" component={Analysis} />
           <Route path="/my-tasks" component={MyTasks} />
           <Route path="/workspace/:id" component={WorkspaceBoard} />
           <Route path="/admin/analytics" component={AdminAnalytics} />

@@ -74,6 +74,15 @@ export default function Home() {
     .sort((a, b) => new Date(b.updatedAt || '').getTime() - new Date(a.updatedAt || '').getTime())
     .slice(0, 5);
 
+  // Recent documents dummy data (will be replaced with real data later)
+  const recentDocuments = [
+    { id: 1, name: "Project Requirements.docx", type: "document", uploadedAt: "2025-01-20", uploadedBy: "Sarah Johnson" },
+    { id: 2, name: "Design Mockups.fig", type: "design", uploadedAt: "2025-01-19", uploadedBy: "Mike Chen" },
+    { id: 3, name: "Budget Analysis.xlsx", type: "spreadsheet", uploadedAt: "2025-01-18", uploadedBy: "Lisa Rodriguez" },
+    { id: 4, name: "Team Photo.jpg", type: "image", uploadedAt: "2025-01-17", uploadedBy: "John Smith" },
+    { id: 5, name: "Meeting Notes.pdf", type: "document", uploadedAt: "2025-01-16", uploadedBy: "Emily Davis" }
+  ];
+
   return (
     <div className="flex min-h-screen bg-white">
       <Sidebar />
