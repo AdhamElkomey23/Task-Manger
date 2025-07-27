@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -23,199 +25,135 @@ import {
   Target,
   Award,
   Activity,
-  Zap
+  Zap,
+  FileText,
+  HardDrive,
+  Database
 } from "lucide-react";
 import Sidebar from "@/components/sidebar";
+import type { TaskWithDetails, User, File as FileType } from "@shared/schema";
 
-// Dummy team data for analysis
-const teamAnalytics = [
-  {
-    id: "1",
-    name: "Sarah Johnson",
-    role: "admin",
-    department: "Product Management",
-    tasksCompleted: 45,
-    tasksInProgress: 3,
-    avgCompletionTime: 2.3,
-    productivity: 92,
-    thisMonthTasks: 12,
-    lastMonthTasks: 15,
-    onTimeDelivery: 87,
-    qualityScore: 94,
-    collaborationScore: 89
-  },
-  {
-    id: "2", 
-    name: "Mike Chen",
-    role: "worker",
-    department: "Engineering",
-    tasksCompleted: 38,
-    tasksInProgress: 5,
-    avgCompletionTime: 1.8,
-    productivity: 88,
-    thisMonthTasks: 18,
-    lastMonthTasks: 16,
-    onTimeDelivery: 92,
-    qualityScore: 91,
-    collaborationScore: 85
-  },
-  {
-    id: "3",
-    name: "Lisa Rodriguez",
-    role: "worker", 
-    department: "Finance",
-    tasksCompleted: 31,
-    tasksInProgress: 2,
-    avgCompletionTime: 3.1,
-    productivity: 85,
-    thisMonthTasks: 8,
-    lastMonthTasks: 12,
-    onTimeDelivery: 78,
-    qualityScore: 88,
-    collaborationScore: 92
-  },
-  {
-    id: "4",
-    name: "John Smith",
-    role: "worker",
-    department: "Design", 
-    tasksCompleted: 28,
-    tasksInProgress: 4,
-    avgCompletionTime: 4.2,
-    productivity: 82,
-    thisMonthTasks: 7,
-    lastMonthTasks: 11,
-    onTimeDelivery: 71,
-    qualityScore: 85,
-    collaborationScore: 78
-  },
-  {
-    id: "5",
-    name: "Emily Davis",
-    role: "admin",
-    department: "Operations",
-    tasksCompleted: 52,
-    tasksInProgress: 6,
-    avgCompletionTime: 1.5,
-    productivity: 95,
-    thisMonthTasks: 22,
-    lastMonthTasks: 18,
-    onTimeDelivery: 95,
-    qualityScore: 96,
-    collaborationScore: 94
-  },
-  {
-    id: "6",
-    name: "Alex Kim",
-    role: "worker",
-    department: "Marketing",
-    tasksCompleted: 19,
-    tasksInProgress: 2,
-    avgCompletionTime: 5.8,
-    productivity: 68,
-    thisMonthTasks: 5,
-    lastMonthTasks: 8,
-    onTimeDelivery: 62,
-    qualityScore: 72,
-    collaborationScore: 75
-  },
-  {
-    id: "7",
-    name: "Sophia Lee",
-    role: "worker",
-    department: "Engineering",
-    tasksCompleted: 42,
-    tasksInProgress: 7,
-    avgCompletionTime: 2.0,
-    productivity: 91,
-    thisMonthTasks: 19,
-    lastMonthTasks: 17,
-    onTimeDelivery: 89,
-    qualityScore: 93,
-    collaborationScore: 87
-  },
-  {
-    id: "8",
-    name: "David Brown",
-    role: "worker",
-    department: "Support",
-    tasksCompleted: 15,
-    tasksInProgress: 1,
-    avgCompletionTime: 6.2,
-    productivity: 65,
-    thisMonthTasks: 3,
-    lastMonthTasks: 7,
-    onTimeDelivery: 58,
-    qualityScore: 69,
-    collaborationScore: 71
-  }
-];
-
-const getPerformanceColor = (score: number) => {
-  if (score >= 90) return "text-green-600 bg-green-100";
-  if (score >= 80) return "text-blue-600 bg-blue-100";
-  if (score >= 70) return "text-yellow-600 bg-yellow-100";
-  return "text-red-600 bg-red-100";
+type FileWithUploader = FileType & {
+  uploader: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  };
 };
 
-const getPerformanceIcon = (score: number) => {
-  if (score >= 90) return <TrendingUp className="h-4 w-4 text-green-600" />;
-  if (score >= 70) return <Activity className="h-4 w-4 text-blue-600" />;
-  return <TrendingDown className="h-4 w-4 text-red-600" />;
-};
-
-const getInsightMessage = (member: typeof teamAnalytics[0]) => {
-  const issues = [];
-  
-  if (member.productivity < 70) {
-    issues.push("Low overall productivity");
-  }
-  if (member.thisMonthTasks < 8 && member.role === "worker") {
-    issues.push("Below average task completion this month");
-  }
-  if (member.onTimeDelivery < 70) {
-    issues.push("Frequent deadline misses");
-  }
-  if (member.avgCompletionTime > 5) {
-    issues.push("Slower than average completion time");
-  }
-  if (member.collaborationScore < 75) {
-    issues.push("Limited team collaboration");
-  }
-
-  if (issues.length === 0) {
-    return {
-      type: "positive",
-      message: "Performing excellently across all metrics"
+type AnalyticsData = {
+  totalTasks: number;
+  completedTasks: number;
+  overdueTasks: number;
+  avgCompletionTime: number;
+  tasksByUser: Array<{
+    user: User;
+    completedTasks: number;
+    totalTasks: number;
+  }>;
+  tasksByWorkspace: Array<{
+    workspace: {
+      id: number;
+      name: string;
+      color: string;
     };
-  } else if (issues.length >= 3) {
-    return {
-      type: "critical",
-      message: `Multiple areas need attention: ${issues.slice(0, 2).join(", ")} and ${issues.length - 2} more issues`
-    };
-  } else {
-    return {
-      type: "warning", 
-      message: issues.join(" and ")
-    };
-  }
+    completedTasks: number;
+    totalTasks: number;
+  }>;
 };
 
 export default function Analysis() {
   const { isAuthenticated, isLoading } = useAuth();
   const [selectedUser, setSelectedUser] = useState<string>("all");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
+
+  const { data: analytics } = useQuery<AnalyticsData>({
+    queryKey: ["/api/analytics/summary"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: tasks = [] } = useQuery<TaskWithDetails[]>({
+    queryKey: ["/api/tasks"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: files = [] } = useQuery<FileWithUploader[]>({
+    queryKey: ["/api/files"],
+    enabled: isAuthenticated,
+  });
 
   if (isLoading || !isAuthenticated) return null;
 
-  const selectedMember = selectedUser === "all" ? null : teamAnalytics.find(m => m.id === selectedUser);
-  
-  // Overall team statistics
-  const totalTasks = teamAnalytics.reduce((sum, m) => sum + m.tasksCompleted, 0);
-  const avgProductivity = Math.round(teamAnalytics.reduce((sum, m) => sum + m.productivity, 0) / teamAnalytics.length);
-  const topPerformer = teamAnalytics.reduce((best, member) => 
-    member.productivity > best.productivity ? member : best
-  );
-  const underperformers = teamAnalytics.filter(m => m.productivity < 75);
+  // Calculate real analytics
+  const totalUsers = users.length;
+  const activeUsers = users.filter(user => 
+    tasks.some(task => task.assigneeId === user.id)
+  ).length;
+
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(task => task.status === 'done').length;
+  const inProgressTasks = tasks.filter(task => task.status === 'in-progress').length;
+  const todoTasks = tasks.filter(task => task.status === 'todo').length;
+  const overdueTasks = tasks.filter(task => 
+    task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done'
+  ).length;
+
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  // File analytics
+  const totalFiles = files.length;
+  const totalFileSize = files.reduce((sum, file) => sum + file.fileSize, 0);
+  const filesByType = files.reduce((acc, file) => {
+    const type = file.fileType.split('/')[0];
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // User performance analytics
+  const userPerformance = users.map(user => {
+    const userTasks = tasks.filter(task => task.assigneeId === user.id);
+    const userCompletedTasks = userTasks.filter(task => task.status === 'done');
+    const userInProgressTasks = userTasks.filter(task => task.status === 'in-progress');
+    const userOverdueTasks = userTasks.filter(task => 
+      task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done'
+    );
+    const userFiles = files.filter(file => file.uploadedBy === user.id);
+
+    return {
+      id: user.id,
+      name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+      email: user.email,
+      role: user.role,
+      tasksTotal: userTasks.length,
+      tasksCompleted: userCompletedTasks.length,
+      tasksInProgress: userInProgressTasks.length,
+      tasksOverdue: userOverdueTasks.length,
+      completionRate: userTasks.length > 0 ? Math.round((userCompletedTasks.length / userTasks.length) * 100) : 0,
+      filesUploaded: userFiles.length,
+      productivity: userTasks.length > 0 ? Math.min(100, Math.round(
+        (userCompletedTasks.length * 0.6 + userInProgressTasks.length * 0.3 - userOverdueTasks.length * 0.1) * 10
+      )) : 0,
+    };
+  }).sort((a, b) => b.productivity - a.productivity);
+
+  // Workspace performance
+  const workspacePerformance = analytics?.tasksByWorkspace || [];
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const selectedUserData = selectedUser === "all" ? null : userPerformance.find(u => u.id === selectedUser);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -226,8 +164,8 @@ export default function Analysis() {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Analysis</h1>
-              <p className="text-gray-600 mt-2">Performance overview and productivity insights</p>
+              <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+              <p className="text-gray-600 mt-2">Real-time performance insights and productivity metrics</p>
             </div>
             <div className="flex items-center space-x-4">
               <Select value={selectedUser} onValueChange={setSelectedUser}>
@@ -236,9 +174,9 @@ export default function Analysis() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Team Members</SelectItem>
-                  {teamAnalytics.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name} - {member.department}
+                  {userPerformance.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name} - {user.role}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -259,7 +197,8 @@ export default function Analysis() {
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Team Size</p>
-                        <p className="text-2xl font-bold text-gray-900">{teamAnalytics.length}</p>
+                        <p className="text-2xl font-bold text-gray-900">{totalUsers}</p>
+                        <p className="text-xs text-gray-500">{activeUsers} active</p>
                       </div>
                     </div>
                   </CardContent>
@@ -274,6 +213,7 @@ export default function Analysis() {
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Total Tasks</p>
                         <p className="text-2xl font-bold text-gray-900">{totalTasks}</p>
+                        <p className="text-xs text-gray-500">{completedTasks} completed</p>
                       </div>
                     </div>
                   </CardContent>
@@ -283,16 +223,17 @@ export default function Analysis() {
                   <CardContent className="p-6">
                     <div className="flex items-center">
                       <div className="p-2 bg-purple-100 rounded-lg">
-                        <BarChart3 className="h-6 w-6 text-purple-600" />
+                        <Target className="h-6 w-6 text-purple-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Avg Productivity</p>
-                        <p className="text-2xl font-bold text-gray-900">{avgProductivity}%</p>
+                        <p className="text-sm font-medium text-gray-600">Completion Rate</p>
+                        <p className="text-2xl font-bold text-gray-900">{completionRate}%</p>
+                        <p className="text-xs text-gray-500">{inProgressTasks} in progress</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardContent className="p-6">
                     <div className="flex items-center">
@@ -300,319 +241,292 @@ export default function Analysis() {
                         <AlertTriangle className="h-6 w-6 text-red-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Need Attention</p>
-                        <p className="text-2xl font-bold text-gray-900">{underperformers.length}</p>
+                        <p className="text-sm font-medium text-gray-600">Overdue Tasks</p>
+                        <p className="text-2xl font-bold text-gray-900">{overdueTasks}</p>
+                        <p className="text-xs text-gray-500">{todoTasks} pending</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Top Performer Highlight */}
-              <Card className="mb-8 bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-3 bg-green-100 rounded-full">
-                        <Award className="h-8 w-8 text-green-600" />
+              {/* File Analytics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-cyan-100 rounded-lg">
+                        <FileText className="h-6 w-6 text-cyan-600" />
                       </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Top Performer</h3>
-                        <p className="text-green-600 font-medium">{topPerformer.name}</p>
-                        <p className="text-sm text-gray-600">{topPerformer.department}</p>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Total Files</p>
+                        <p className="text-2xl font-bold text-gray-900">{totalFiles}</p>
+                        <p className="text-xs text-gray-500">{Object.keys(filesByType).length} file types</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold text-green-600">{topPerformer.productivity}%</p>
-                      <p className="text-sm text-gray-600">Productivity Score</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <HardDrive className="h-6 w-6 text-orange-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Storage Used</p>
+                        <p className="text-2xl font-bold text-gray-900">{formatFileSize(totalFileSize)}</p>
+                        <p className="text-xs text-gray-500">Across all uploads</p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* Team Performance Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {teamAnalytics.map((member) => {
-                  const insight = getInsightMessage(member);
-                  return (
-                    <Card key={member.id} className="hover:shadow-lg transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="w-12 h-12">
-                              <AvatarFallback>
-                                {member.name.split(' ').map(n => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                              <p className="text-sm text-gray-600">{member.department}</p>
-                              <Badge variant={member.role === "admin" ? "default" : "secondary"} className="text-xs mt-1">
-                                {member.role}
-                              </Badge>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-teal-100 rounded-lg">
+                        <Database className="h-6 w-6 text-teal-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Avg File Size</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {formatFileSize(totalFiles > 0 ? totalFileSize / totalFiles : 0)}
+                        </p>
+                        <p className="text-xs text-gray-500">Per file uploaded</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Team Performance & Workspace Analytics */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Team Performance */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Award className="h-5 w-5 mr-2 text-yellow-600" />
+                      Team Performance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {userPerformance.slice(0, 6).map((user) => (
+                        <div key={user.id} className="flex items-center">
+                          <Avatar className="w-8 h-8 mr-3">
+                            <AvatarFallback>
+                              {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-medium text-gray-900">
+                                {user.name}
+                              </span>
+                              <div className="flex items-center space-x-2">
+                                <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
+                                  {user.role}
+                                </Badge>
+                                <span className="text-sm font-bold text-gray-700">
+                                  {user.productivity}%
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="flex items-center space-x-2">
-                              {getPerformanceIcon(member.productivity)}
-                              <Badge className={`${getPerformanceColor(member.productivity)}`}>
-                                {member.productivity}%
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4 mb-4">
-                          <div className="text-center">
-                            <p className="text-lg font-semibold text-gray-900">{member.thisMonthTasks}</p>
-                            <p className="text-xs text-gray-500">This Month</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-lg font-semibold text-blue-600">{member.tasksInProgress}</p>
-                            <p className="text-xs text-gray-500">In Progress</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-lg font-semibold text-green-600">{member.onTimeDelivery}%</p>
-                            <p className="text-xs text-gray-500">On Time</p>
-                          </div>
-                        </div>
-
-                        <div className={`p-3 rounded-lg mb-4 ${
-                          insight.type === "positive" ? "bg-green-50 border border-green-200" :
-                          insight.type === "critical" ? "bg-red-50 border border-red-200" :
-                          "bg-yellow-50 border border-yellow-200"
-                        }`}>
-                          <div className="flex items-start space-x-2">
-                            {insight.type === "positive" ? (
-                              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                            ) : insight.type === "critical" ? (
-                              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                            ) : (
-                              <Clock className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                            )}
-                            <p className={`text-sm ${
-                              insight.type === "positive" ? "text-green-700" :
-                              insight.type === "critical" ? "text-red-700" :
-                              "text-yellow-700"
-                            }`}>
-                              {insight.message}
+                            <Progress value={user.productivity} className="h-2" />
+                            <p className="text-xs text-gray-500 mt-1">
+                              {user.tasksCompleted}/{user.tasksTotal} tasks • {user.filesUploaded} files
                             </p>
                           </div>
                         </div>
+                      ))}
+                      
+                      {userPerformance.length === 0 && (
+                        <div className="text-center text-gray-500 py-8">
+                          No team members found
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
 
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => setSelectedUser(member.id)}
-                        >
-                          View Detailed Analysis
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </>
-          ) : selectedMember && (
-            <>
-              {/* Individual Performance Analysis */}
-              <Card className="mb-8">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <Avatar className="w-16 h-16">
-                        <AvatarFallback className="text-xl">
-                          {selectedMember.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-2xl">{selectedMember.name}</CardTitle>
-                        <p className="text-gray-600">{selectedMember.department}</p>
-                        <Badge variant={selectedMember.role === "admin" ? "default" : "secondary"} className="mt-2">
-                          {selectedMember.role}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center space-x-2 mb-2">
-                        {getPerformanceIcon(selectedMember.productivity)}
-                        <span className="text-3xl font-bold text-gray-900">{selectedMember.productivity}%</span>
-                      </div>
-                      <p className="text-sm text-gray-600">Overall Productivity</p>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-
-              {/* Detailed Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <CheckCircle className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Tasks Completed</p>
-                        <p className="text-2xl font-bold text-gray-900">{selectedMember.tasksCompleted}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-yellow-100 rounded-lg">
-                        <Clock className="h-6 w-6 text-yellow-600" />
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Avg Completion</p>
-                        <p className="text-2xl font-bold text-gray-900">{selectedMember.avgCompletionTime}d</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <Target className="h-6 w-6 text-green-600" />
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">On-Time Delivery</p>
-                        <p className="text-2xl font-bold text-gray-900">{selectedMember.onTimeDelivery}%</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-purple-100 rounded-lg">
-                        <Users className="h-6 w-6 text-purple-600" />
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Collaboration</p>
-                        <p className="text-2xl font-bold text-gray-900">{selectedMember.collaborationScore}%</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Performance Breakdown */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Workspace Performance */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Monthly Performance</CardTitle>
+                    <CardTitle className="flex items-center">
+                      <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
+                      Workspace Performance
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">This Month</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-semibold">{selectedMember.thisMonthTasks} tasks</span>
-                          {selectedMember.thisMonthTasks > selectedMember.lastMonthTasks ? (
-                            <TrendingUp className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4 text-red-600" />
-                          )}
+                      {workspacePerformance.map((workspace) => {
+                        const completionRate = workspace.totalTasks > 0 
+                          ? (workspace.completedTasks / workspace.totalTasks) * 100 
+                          : 0;
+                      
+                        return (
+                          <div key={workspace.workspace.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center">
+                              <div 
+                                className="w-3 h-3 rounded mr-3"
+                                style={{ backgroundColor: workspace.workspace.color || '#6b7280' }}
+                              />
+                              <span className="font-medium text-gray-900">
+                                {workspace.workspace.name}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-sm font-medium text-gray-900">
+                                {Math.round(completionRate)}%
+                              </span>
+                              <p className="text-xs text-gray-500">
+                                {workspace.completedTasks}/{workspace.totalTasks} completed
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {workspacePerformance.length === 0 && (
+                        <div className="text-center text-gray-500 py-8">
+                          No workspace data available
                         </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Last Month</span>
-                        <span className="font-semibold">{selectedMember.lastMonthTasks} tasks</span>
-                      </div>
-                      <div className="pt-4 border-t">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Change</span>
-                          <span className={`font-semibold ${
-                            selectedMember.thisMonthTasks > selectedMember.lastMonthTasks ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {selectedMember.thisMonthTasks > selectedMember.lastMonthTasks ? '+' : ''}
-                            {selectedMember.thisMonthTasks - selectedMember.lastMonthTasks} tasks
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quality Metrics</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Quality Score</span>
-                        <Badge className={getPerformanceColor(selectedMember.qualityScore)}>
-                          {selectedMember.qualityScore}%
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">On-Time Delivery</span>
-                        <Badge className={getPerformanceColor(selectedMember.onTimeDelivery)}>
-                          {selectedMember.onTimeDelivery}%
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Team Collaboration</span>
-                        <Badge className={getPerformanceColor(selectedMember.collaborationScore)}>
-                          {selectedMember.collaborationScore}%
-                        </Badge>
-                      </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Insights and Recommendations */}
-              <Card className="mt-6">
+              {/* File Type Distribution */}
+              <Card>
                 <CardHeader>
-                  <CardTitle>Performance Insights</CardTitle>
+                  <CardTitle className="flex items-center">
+                    <FileText className="h-5 w-5 mr-2 text-green-600" />
+                    File Type Distribution
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className={`p-4 rounded-lg ${
-                    getInsightMessage(selectedMember).type === "positive" ? "bg-green-50 border border-green-200" :
-                    getInsightMessage(selectedMember).type === "critical" ? "bg-red-50 border border-red-200" :
-                    "bg-yellow-50 border border-yellow-200"
-                  }`}>
-                    <div className="flex items-start space-x-3">
-                      {getInsightMessage(selectedMember).type === "positive" ? (
-                        <CheckCircle className="h-6 w-6 text-green-600 mt-1 flex-shrink-0" />
-                      ) : getInsightMessage(selectedMember).type === "critical" ? (
-                        <AlertTriangle className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
-                      ) : (
-                        <Clock className="h-6 w-6 text-yellow-600 mt-1 flex-shrink-0" />
-                      )}
-                      <div>
-                        <p className={`font-semibold ${
-                          getInsightMessage(selectedMember).type === "positive" ? "text-green-800" :
-                          getInsightMessage(selectedMember).type === "critical" ? "text-red-800" :
-                          "text-yellow-800"
-                        }`}>
-                          {getInsightMessage(selectedMember).type === "positive" ? "Excellent Performance" :
-                           getInsightMessage(selectedMember).type === "critical" ? "Needs Immediate Attention" :
-                           "Improvement Opportunities"}
-                        </p>
-                        <p className={`mt-1 ${
-                          getInsightMessage(selectedMember).type === "positive" ? "text-green-700" :
-                          getInsightMessage(selectedMember).type === "critical" ? "text-red-700" :
-                          "text-yellow-700"
-                        }`}>
-                          {getInsightMessage(selectedMember).message}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {Object.entries(filesByType).map(([type, count]) => (
+                      <div key={type} className="bg-gray-50 rounded-lg p-4 text-center">
+                        <p className="text-2xl font-bold text-gray-900">{count}</p>
+                        <p className="text-sm text-gray-600 capitalize">{type} files</p>
+                        <p className="text-xs text-gray-500">
+                          {Math.round((count / totalFiles) * 100)}% of total
                         </p>
                       </div>
-                    </div>
+                    ))}
+                    
+                    {Object.keys(filesByType).length === 0 && (
+                      <div className="col-span-full text-center text-gray-500 py-8">
+                        No files uploaded yet
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </>
+          ) : (
+            // Individual User Analysis
+            selectedUserData && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <CheckCircle className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm font-medium text-gray-600">Tasks Completed</p>
+                          <p className="text-2xl font-bold text-gray-900">{selectedUserData.tasksCompleted}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center">
+                        <div className="p-2 bg-yellow-100 rounded-lg">
+                          <Clock className="h-6 w-6 text-yellow-600" />
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm font-medium text-gray-600">In Progress</p>
+                          <p className="text-2xl font-bold text-gray-900">{selectedUserData.tasksInProgress}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <Target className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm font-medium text-gray-600">Completion Rate</p>
+                          <p className="text-2xl font-bold text-gray-900">{selectedUserData.completionRate}%</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <FileText className="h-6 w-6 text-purple-600" />
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm font-medium text-gray-600">Files Uploaded</p>
+                          <p className="text-2xl font-bold text-gray-900">{selectedUserData.filesUploaded}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Activity className="h-5 w-5 mr-2 text-indigo-600" />
+                      Performance Overview for {selectedUserData.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600">Overall Productivity</span>
+                        <span className="text-lg font-bold text-gray-900">{selectedUserData.productivity}%</span>
+                      </div>
+                      <Progress value={selectedUserData.productivity} className="h-3" />
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-blue-600">{selectedUserData.tasksTotal}</p>
+                          <p className="text-sm text-gray-600">Total Tasks</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-green-600">{selectedUserData.tasksCompleted}</p>
+                          <p className="text-sm text-gray-600">Completed</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-yellow-600">{selectedUserData.tasksInProgress}</p>
+                          <p className="text-sm text-gray-600">In Progress</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-red-600">{selectedUserData.tasksOverdue}</p>
+                          <p className="text-sm text-gray-600">Overdue</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )
           )}
         </div>
       </div>
