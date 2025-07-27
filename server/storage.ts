@@ -92,6 +92,7 @@ export class DatabaseStorage implements IStorage {
         password: user.password,
         firstName: user.firstName || null,
         lastName: user.lastName || null,
+        role: user.role || 'worker',
       })
       .returning();
     return newUser;
