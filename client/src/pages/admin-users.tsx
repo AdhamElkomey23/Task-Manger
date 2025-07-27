@@ -19,9 +19,9 @@ export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateUser, setShowCreateUser] = useState(false);
 
-  // Redirect to home if not authenticated or not admin
+  // Redirect to home if not authenticated
   useEffect(() => {
-    if (!isLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!isLoading && !isAuthenticated) {
       toast({
         title: "Unauthorized",
         description: "You are logged out. Logging in again...",
@@ -32,12 +32,12 @@ export default function AdminUsers() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, user, toast]);
+  }, [isAuthenticated, isLoading, toast]);
 
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
     retry: false,
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated,
   });
 
   const deleteUserMutation = useMutation({
@@ -72,7 +72,7 @@ export default function AdminUsers() {
     }
   };
 
-  if (isLoading || !isAuthenticated || user?.role !== "admin") return null;
+  if (isLoading || !isAuthenticated) return null;
 
   return (
     <div className="flex min-h-screen bg-gray-50">

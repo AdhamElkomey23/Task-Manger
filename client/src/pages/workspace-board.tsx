@@ -43,7 +43,8 @@ export default function WorkspaceBoard() {
   });
 
   const { data: tasks = [], isLoading: tasksLoading } = useQuery<TaskWithDetails[]>({
-    queryKey: ["/api/tasks", { workspaceId }],
+    queryKey: ["/api/tasks", `workspaceId=${workspaceId}`],
+    queryFn: () => fetch(`/api/tasks?workspaceId=${workspaceId}`).then(res => res.json()),
     retry: false,
     enabled: !!workspaceId,
   });

@@ -59,23 +59,11 @@ const createTaskSchema = z.object({
   description: z.string().min(1, "Task description is required"),
   priority: z.enum(["low", "medium", "high"]),
   workspaceId: z.string().min(1, "Please select a workspace"),
-  assigneeId: z.string().min(1, "Please assign to a team member"),
+  assigneeId: z.string().optional(),
   dueDate: z.string().optional(),
 });
 
 type CreateTaskForm = z.infer<typeof createTaskSchema>;
-
-// Dummy team members data (will be replaced with real API call)
-const teamMembers = [
-  { id: "1", firstName: "Sarah", lastName: "Johnson", email: "sarah.johnson@company.com", role: "admin", department: "Product Management" },
-  { id: "2", firstName: "Mike", lastName: "Chen", email: "mike.chen@company.com", role: "worker", department: "Engineering" },
-  { id: "3", firstName: "Lisa", lastName: "Rodriguez", email: "lisa.rodriguez@company.com", role: "worker", department: "Finance" },
-  { id: "4", firstName: "John", lastName: "Smith", email: "john.smith@company.com", role: "worker", department: "Design" },
-  { id: "5", firstName: "Emily", lastName: "Davis", email: "emily.davis@company.com", role: "admin", department: "Operations" },
-  { id: "6", firstName: "Alex", lastName: "Kim", email: "alex.kim@company.com", role: "worker", department: "Marketing" },
-  { id: "7", firstName: "Sophia", lastName: "Lee", email: "sophia.lee@company.com", role: "worker", department: "Engineering" },
-  { id: "8", firstName: "David", lastName: "Brown", email: "david.brown@company.com", role: "worker", department: "Support" }
-];
 
 export default function CreateTask() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -87,6 +75,12 @@ export default function CreateTask() {
   const [newUrl, setNewUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
+
+  // Load real team members from API
+  const { data: teamMembers = [] } = useQuery<UserType[]>({
+    queryKey: ["/api/users"],
+    retry: false,
+  });
 
   const form = useForm<CreateTaskForm>({
     resolver: zodResolver(createTaskSchema),
