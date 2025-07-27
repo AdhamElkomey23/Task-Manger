@@ -261,7 +261,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const attachment = await storage.createAttachment({
         taskId,
-        fileName: file.originalname,
+        fileName: file.filename,
+        originalName: file.originalname,
         fileUrl,
         fileType: file.mimetype,
         fileSize: file.size,

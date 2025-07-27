@@ -351,16 +351,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAnalytics(dateRange?: { from: Date; to: Date }) {
-    let taskQuery = db.select().from(tasks);
+    let whereCondition = undefined;
     
     if (dateRange) {
-      taskQuery = taskQuery.where(and(
+      whereCondition = and(
         sql`${tasks.createdAt} >= ${dateRange.from}`,
         sql`${tasks.createdAt} <= ${dateRange.to}`
-      ));
+      );
     }
 
-    const allTasks = await taskQuery;
+    const allTasks = await db.select().from(tasks).where(whereCondition);
     const completedTasks = allTasks.filter(t => t.status === "done");
     const overdueTasks = allTasks.filter(t => 
       t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "done"

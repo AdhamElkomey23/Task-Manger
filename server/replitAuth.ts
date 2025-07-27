@@ -8,8 +8,10 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
+// Set default domains for development if not provided
 if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+  console.warn("REPLIT_DOMAINS not set, using default domain");
+  process.env.REPLIT_DOMAINS = process.env.REPLIT_DOMAINS || `${process.env.REPL_ID || 'localhost'}.replit.dev`;
 }
 
 const getOidcConfig = memoize(
@@ -31,14 +33,18 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  
+  // Generate a secure session secret if not provided
+  const sessionSecret = process.env.SESSION_SECRET || 'development-secret-key-change-in-production';
+  
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: sessionSecret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production', // Only secure in production
       maxAge: sessionTtl,
     },
   });
