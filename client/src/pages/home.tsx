@@ -16,7 +16,9 @@ import {
   FolderOpen,
   Calendar,
   Target,
-  TrendingUp
+  TrendingUp,
+  CheckSquare,
+  FileText
 } from "lucide-react";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Sidebar from "@/components/sidebar";
@@ -83,245 +85,295 @@ export default function Home() {
     { id: 5, name: "Meeting Notes.pdf", type: "document", uploadedAt: "2025-01-16", uploadedBy: "Emily Davis" }
   ];
 
+  // Add some dummy tasks to make the home page look active
+  const dummyTasks = recentTasks.length === 0 ? [
+    {
+      id: 1,
+      title: "Update landing page design",
+      description: "Refresh the main landing page with new branding and improved user experience",
+      status: "in-progress" as const,
+      priority: "high" as const,
+      workspace: { name: "Marketing" },
+      assignee: { firstName: "Sarah", lastName: "Johnson" },
+      creator: { firstName: "Mike", lastName: "Chen" },
+      updatedAt: new Date("2025-01-27T10:30:00"),
+      comments: [],
+      attachments: []
+    },
+    {
+      id: 2,
+      title: "Database optimization",
+      description: "Improve query performance and reduce response times",
+      status: "done" as const,
+      priority: "medium" as const,
+      workspace: { name: "Engineering" },
+      assignee: { firstName: "Alex", lastName: "Kim" },
+      creator: { firstName: "Lisa", lastName: "Rodriguez" },
+      updatedAt: new Date("2025-01-26T15:45:00"),
+      comments: [],
+      attachments: []
+    },
+    {
+      id: 3,
+      title: "Client presentation preparation",
+      description: "Prepare slides and demo for the quarterly business review",
+      status: "todo" as const,
+      priority: "high" as const,
+      workspace: { name: "Sales" },
+      assignee: { firstName: "John", lastName: "Smith" },
+      creator: { firstName: "Emily", lastName: "Davis" },
+      updatedAt: new Date("2025-01-25T09:15:00"),
+      comments: [],
+      attachments: []
+    },
+    {
+      id: 4,
+      title: "Code review checklist update",
+      description: "Update the development team's code review guidelines",
+      status: "in-progress" as const,
+      priority: "low" as const,
+      workspace: { name: "Engineering" },
+      assignee: { firstName: "Sophia", lastName: "Lee" },
+      creator: { firstName: "David", lastName: "Brown" },
+      updatedAt: new Date("2025-01-24T14:20:00"),
+      comments: [],
+      attachments: []
+    },
+    {
+      id: 5,
+      title: "Budget analysis Q1",
+      description: "Analyze first quarter spending and create projections",
+      status: "done" as const,
+      priority: "medium" as const,
+      workspace: { name: "Finance" },
+      assignee: { firstName: "Lisa", lastName: "Rodriguez" },
+      creator: { firstName: "Sarah", lastName: "Johnson" },
+      updatedAt: new Date("2025-01-23T11:00:00"),
+      comments: [],
+      attachments: []
+    }
+  ] : recentTasks;
+
+  const displayTasks = dummyTasks.slice(0, 5);
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high": return "bg-red-100 text-red-800";
+      case "medium": return "bg-yellow-100 text-yellow-800";
+      case "low": return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "done": return "bg-green-100 text-green-800";
+      case "in-progress": return "bg-blue-100 text-blue-800";
+      case "todo": return "bg-gray-100 text-gray-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       
-      <div className="ml-64 flex-1">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 px-12 py-16">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <h1 className="text-6xl font-bold text-gray-900 mb-6">
-                The everything app, <span className="text-blue-600">for work</span>
-              </h1>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-                Get everyone working in a single platform designed to manage any type of work.
-              </p>
-              <CreateWorkspaceModal>
-                <Button 
-                  size="lg" 
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  Get Started. It's FREE →
-                </Button>
-              </CreateWorkspaceModal>
-              <p className="text-sm text-gray-500 mt-4">Free Forever. No Credit Card.</p>
-            </div>
+      <div className="ml-64 flex-1 p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Welcome back, {user?.firstName}!
+            </h1>
+            <p className="text-gray-600 mt-2">Here's what's happening with your team today</p>
           </div>
-        </div>
 
-        {/* Feature Cards Section */}
-        <div className="px-12 py-20">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">
-              Everything your team is looking for
-            </h2>
-            <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto mb-16">
-              ClickUp's exceptional flexibility can handle any type of work. And we never stop innovating.
-            </p>
-
-            {/* Main Feature Cards */}
-            <div className="grid md:grid-cols-3 gap-8 mb-16">
-              {/* AI-powered productivity */}
-              <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-600 to-pink-600 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-                <div className="space-y-6">
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-                    <TrendingUp className="h-8 w-8 text-white" />
+          {/* Quick Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <CheckCircle className="h-6 w-6 text-blue-600" />
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold mb-4">AI-powered productivity</h3>
-                    <p className="text-purple-100 mb-6">
-                      Get work done faster with the only AI-powered assistant tailored to your role.
-                    </p>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                        <span className="text-sm text-purple-100">Generate action items</span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                        <span className="text-sm text-purple-100">Use simple language</span>
-                      </div>
-                    </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total Tasks</p>
+                    <p className="text-2xl font-bold text-gray-900">{displayTasks.length}</p>
                   </div>
                 </div>
-              </Card>
-
-              {/* View work your way */}
-              <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-                <div className="space-y-6">
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-                    <FolderOpen className="h-8 w-8 text-white" />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Target className="h-6 w-6 text-green-600" />
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold mb-4">View work your way</h3>
-                    <p className="text-blue-100 mb-6">
-                      Instantly switch between 15 views including list, board, gantt, and more.
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Completed</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {displayTasks.filter(task => task.status === 'done').length}
                     </p>
-                    <div className="bg-white/20 rounded-lg p-4">
-                      <div className="text-xs text-blue-100 mb-2">Quick stats:</div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <div className="text-2xl font-bold">{totalTasks}</div>
-                          <div className="text-blue-100">Total Tasks</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold">{completedTasks}</div>
-                          <div className="text-blue-100">Completed</div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
-              </Card>
-
-              {/* Customize in a click */}
-              <Card className="border-0 shadow-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-                <div className="space-y-6">
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-                    <Target className="h-8 w-8 text-white" />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <Clock className="h-6 w-6 text-yellow-600" />
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold mb-4">Customize in a click</h3>
-                    <p className="text-indigo-100 mb-6">
-                      Configuring ClickUp for different types of work is as easy as flipping a switch.
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">In Progress</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {displayTasks.filter(task => task.status === 'in-progress').length}
                     </p>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between bg-white/20 rounded-lg p-3">
-                        <div className="flex items-center space-x-3">
-                          <Clock className="h-5 w-5" />
-                          <span className="text-sm">Time Tracking</span>
-                        </div>
-                        <div className="w-10 h-6 bg-white rounded-full relative">
-                          <div className="w-4 h-4 bg-indigo-600 rounded-full absolute top-1 right-1"></div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between bg-white/20 rounded-lg p-3">
-                        <div className="flex items-center space-x-3">
-                          <Users className="h-5 w-5" />
-                          <span className="text-sm">Team Collaboration</span>
-                        </div>
-                        <div className="w-10 h-6 bg-white rounded-full relative">
-                          <div className="w-4 h-4 bg-indigo-600 rounded-full absolute top-1 right-1"></div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
-              </Card>
-            </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">High Priority</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {displayTasks.filter(task => task.priority === 'high').length}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-            {/* Bottom Feature Grid */}
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Plays well with others & Replaces them entirely */}
-              <div className="grid gap-6">
-                <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-600 to-pink-600 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300">
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Recent Tasks */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <CheckSquare className="h-5 w-5 mr-2" />
+                    Recently Added Tasks
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-4">
-                    <h3 className="text-2xl font-bold">Plays well with others</h3>
-                    <p className="text-purple-100">
-                      Easily integrates with the tools you already use.
-                    </p>
-                    <div className="flex flex-wrap gap-3 mt-6">
-                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">G</span>
-                      </div>
-                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">S</span>
-                      </div>
-                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">Z</span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300">
-                  <div className="space-y-4">
-                    <h3 className="text-2xl font-bold">Replaces them entirely</h3>
-                    <p className="text-blue-100">
-                      Eliminate app sprawl and reduce software spend.
-                    </p>
-                    <div className="flex items-center space-x-4 mt-6">
-                      <div className="text-3xl font-bold">{workspaces.length}</div>
-                      <div className="text-blue-100">Active Workspaces</div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              {/* Search everything */}
-              <Card className="border-0 shadow-xl bg-gray-900 text-white p-8 rounded-3xl hover:shadow-2xl transition-all duration-300">
-                <div className="space-y-6">
-                  <h3 className="text-2xl font-bold">Search everything</h3>
-                  <p className="text-gray-300">
-                    Find any file in ClickUp, a connected app, or your local drive, from one place.
-                  </p>
-                  
-                  {/* Mock search results */}
-                  <div className="space-y-4 mt-8">
-                    {recentTasks.slice(0, 3).map((task) => (
-                      <div key={task.id} className="flex items-center space-x-3 p-3 bg-gray-800 rounded-lg">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                          <Target className="h-4 w-4 text-white" />
+                    {displayTasks.map((task) => (
+                      <div key={task.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <CheckSquare className="h-5 w-5 text-blue-600" />
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-medium">{task.title}</div>
-                          <div className="text-xs text-gray-400 capitalize">{task.status.replace('-', ' ')} • {task.priority} priority</div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">{task.title}</h3>
+                          <p className="text-sm text-gray-600 truncate">{task.description}</p>
+                          <div className="flex items-center space-x-2 mt-2">
+                            <Badge className={getStatusColor(task.status)}>
+                              {task.status.replace('-', ' ')}
+                            </Badge>
+                            <Badge className={getPriorityColor(task.priority)}>
+                              {task.priority}
+                            </Badge>
+                            <span className="text-xs text-gray-500">{task.workspace.name}</span>
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 text-right">
+                          <div className="text-sm text-gray-900">
+                            {task.assignee?.firstName} {task.assignee?.lastName}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString() : 'N/A'}
+                          </div>
                         </div>
                       </div>
                     ))}
-                    {recentTasks.length === 0 && (
-                      <div className="text-center py-8">
-                        <Calendar className="mx-auto h-12 w-12 text-gray-600 mb-4" />
-                        <p className="text-gray-400">No tasks to display</p>
-                        <CreateWorkspaceModal>
-                          <Button variant="outline" className="mt-4 border-gray-600 text-gray-300 hover:bg-gray-800">
-                            Create Your First Workspace
-                          </Button>
-                        </CreateWorkspaceModal>
-                      </div>
-                    )}
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Documents */}
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <FolderOpen className="h-5 w-5 mr-2" />
+                    Recent Documents
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {recentDocuments.map((doc) => (
+                      <div key={doc.id} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                            {doc.type === 'document' ? (
+                              <FileText className="h-4 w-4 text-blue-500" />
+                            ) : doc.type === 'design' ? (
+                              <FileText className="h-4 w-4 text-purple-500" />
+                            ) : doc.type === 'spreadsheet' ? (
+                              <FileText className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <FileText className="h-4 w-4 text-gray-500" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">{doc.name}</h4>
+                          <p className="text-xs text-gray-500">{doc.uploadedBy}</p>
+                          <p className="text-xs text-gray-400">{doc.uploadedAt}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
               </Card>
             </div>
           </div>
-        </div>
 
-        {/* CTA Section */}
-        <div className="bg-gradient-to-br from-blue-600 to-purple-600 px-12 py-20">
-          <div className="max-w-4xl mx-auto text-center text-white">
-            <h2 className="text-4xl font-bold mb-6">
-              Ready to Transform Your Team's Productivity?
-            </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-              Join teams who've replaced WhatsApp chaos with organized, trackable workflows
-            </p>
-            <CreateWorkspaceModal>
-              <Button 
-                size="lg" 
-                variant="secondary"
-                className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                Start Your Free Account
-              </Button>
-            </CreateWorkspaceModal>
-          </div>
-        </div>
+          {/* Activity Summary */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2" />
+                Activity Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-6 bg-blue-50 rounded-lg">
+                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                    {displayTasks.filter(task => 
+                      task.updatedAt && new Date(task.updatedAt).toDateString() === new Date().toDateString()
+                    ).length}
+                  </div>
+                  <div className="text-sm text-gray-600">Tasks Updated Today</div>
+                </div>
+                <div className="text-center p-6 bg-green-50 rounded-lg">
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    {recentDocuments.filter(doc => 
+                      new Date(doc.uploadedAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
+                    ).length}
+                  </div>
+                  <div className="text-sm text-gray-600">Files Uploaded This Week</div>
+                </div>
+                <div className="text-center p-6 bg-purple-50 rounded-lg">
+                  <div className="text-3xl font-bold text-purple-600 mb-2">8</div>
+                  <div className="text-sm text-gray-600">Team Members Active</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Trusted by section */}
-        <div className="px-12 py-16 bg-gray-50">
-          <div className="max-w-7xl mx-auto text-center">
-            <p className="text-gray-600 mb-8">Trusted by the world's leading businesses</p>
-            <div className="flex items-center justify-center space-x-12 opacity-60">
-              <div className="text-2xl font-bold text-gray-400">Microsoft</div>
-              <div className="text-2xl font-bold text-gray-400">Google</div>
-              <div className="text-2xl font-bold text-gray-400">Spotify</div>
-              <div className="text-2xl font-bold text-gray-400">Airbnb</div>
-              <div className="text-2xl font-bold text-gray-400">Nike</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
