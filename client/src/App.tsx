@@ -42,7 +42,7 @@ function Router() {
           <Route path="/" component={Landing} />
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Signup} />
-          <Route component={() => <Login />} />
+          <Route path="/:rest*" component={() => <Login />} />
         </>
       ) : (
         <>
@@ -57,7 +57,7 @@ function Router() {
           <Route path="/admin/analytics" component={AdminAnalytics} />
           <Route path="/admin/users" component={AdminUsers} />
           <Route path="/admin/workspaces" component={AdminWorkspaces} />
-          <Route component={NotFound} />
+          <Route path="/:rest*" component={NotFound} />
         </>
       )}
     </Switch>

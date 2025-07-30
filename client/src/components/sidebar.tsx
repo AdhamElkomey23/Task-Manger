@@ -114,80 +114,80 @@ export default function Sidebar() {
           <nav className="flex-1 px-3 py-4 space-y-1">
             {/* Main Pages */}
             <Link href="/">
-              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+              <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer ${
                 isActive("/") 
                   ? "text-blue-600 bg-blue-50" 
                   : "text-gray-700 hover:bg-gray-100"
               }`}>
                 <Home className="mr-3 h-5 w-5" />
                 Home
-              </a>
+              </div>
             </Link>
             
             <Link href="/inbox">
-              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+              <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer ${
                 isActive("/inbox") 
                   ? "text-blue-600 bg-blue-50" 
                   : "text-gray-700 hover:bg-gray-100"
               }`}>
                 <Inbox className="mr-3 h-5 w-5" />
                 Inbox
-              </a>
+              </div>
             </Link>
             
             <Link href="/team">
-              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+              <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer ${
                 isActive("/team") 
                   ? "text-blue-600 bg-blue-50" 
                   : "text-gray-700 hover:bg-gray-100"
               }`}>
                 <Users className="mr-3 h-5 w-5" />
                 Team
-              </a>
+              </div>
             </Link>
             
             <Link href="/data">
-              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+              <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer ${
                 isActive("/data") 
                   ? "text-blue-600 bg-blue-50" 
                   : "text-gray-700 hover:bg-gray-100"
               }`}>
                 <Database className="mr-3 h-5 w-5" />
                 Data
-              </a>
+              </div>
             </Link>
             
             <Link href="/analysis">
-              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+              <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer ${
                 isActive("/analysis") 
                   ? "text-blue-600 bg-blue-50" 
                   : "text-gray-700 hover:bg-gray-100"
               }`}>
                 <PieChart className="mr-3 h-5 w-5" />
                 Analysis
-              </a>
+              </div>
             </Link>
             
             <Link href="/brain">
-              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+              <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer ${
                 isActive("/brain") 
                   ? "text-purple-600 bg-purple-50" 
                   : "text-gray-700 hover:bg-purple-50"
               }`}>
                 <Brain className="mr-3 h-5 w-5" />
                 AI Brain
-              </a>
+              </div>
             </Link>
             
             <Link href="/create-task">
-              <a className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${
+              <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer ${
                 isActive("/create-task") 
                   ? "text-blue-600 bg-blue-50" 
                   : "text-gray-700 hover:bg-gray-100"
               }`}>
                 <Plus className="mr-3 h-5 w-5" />
                 Create Task
-              </a>
+              </div>
             </Link>
             
             <button
@@ -219,7 +219,7 @@ export default function Sidebar() {
                   const IconComponent = getWorkspaceIcon(workspace.icon || "building");
                   return (
                     <Link key={workspace.id} href={`/workspace/${workspace.id}`}>
-                      <a className={`flex items-center px-3 py-2 text-sm rounded-lg ${
+                      <div className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer ${
                         location.startsWith(`/workspace/${workspace.id}`)
                           ? "text-blue-600 bg-blue-50"
                           : "text-gray-700 hover:bg-gray-100"
@@ -231,7 +231,7 @@ export default function Sidebar() {
                         <span className="text-xs text-gray-500">
                           {workspace.taskCount || 0}
                         </span>
-                      </a>
+                      </div>
                     </Link>
                   );
                 })}
@@ -261,34 +261,34 @@ export default function Sidebar() {
                 </div>
                 <div className="space-y-1">
                   <Link href="/admin/analytics">
-                    <a className={`flex items-center px-3 py-2 text-sm rounded-lg ${
+                    <div className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer ${
                       isActive("/admin/analytics")
                         ? "text-blue-600 bg-blue-50"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}>
                       <BarChart3 className="mr-3 h-5 w-5" />
                       Analytics
-                    </a>
+                    </div>
                   </Link>
                   <Link href="/admin/users">
-                    <a className={`flex items-center px-3 py-2 text-sm rounded-lg ${
+                    <div className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer ${
                       isActive("/admin/users")
                         ? "text-blue-600 bg-blue-50"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}>
                       <Users className="mr-3 h-5 w-5" />
                       User Management
-                    </a>
+                    </div>
                   </Link>
                   <Link href="/admin/workspaces">
-                    <a className={`flex items-center px-3 py-2 text-sm rounded-lg ${
+                    <div className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer ${
                       isActive("/admin/workspaces")
                         ? "text-blue-600 bg-blue-50"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}>
                       <Building className="mr-3 h-5 w-5" />
                       Workspaces
-                    </a>
+                    </div>
                   </Link>
                 </div>
               </div>
