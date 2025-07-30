@@ -28,6 +28,7 @@ import {
   HeadphonesIcon,
   Brain
 } from "lucide-react";
+import { ThemeToggle } from "./theme-toggle";
 import type { WorkspaceWithDetails } from "@shared/schema";
 
 export default function Sidebar() {
@@ -77,18 +78,21 @@ export default function Sidebar() {
 
   return (
     <>
-      <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 z-30">
+      <div className="fixed inset-y-0 left-0 w-64 bg-background border-r border-border z-30">
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center px-6 py-4 border-b border-gray-200">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-              <CheckSquare className="text-white h-5 w-5" />
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <CheckSquare className="text-white h-5 w-5" />
+              </div>
+              <span className="ml-3 text-xl font-bold text-foreground">TaskFlow</span>
             </div>
-            <span className="ml-3 text-xl font-bold text-gray-900">TaskFlow</span>
+            <ThemeToggle />
           </div>
           
           {/* User Profile */}
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-border">
             <div className="flex items-center">
               <Avatar className="w-10 h-10">
                 <AvatarFallback>
@@ -96,7 +100,7 @@ export default function Sidebar() {
                 </AvatarFallback>
               </Avatar>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-foreground">
                   {user?.firstName} {user?.lastName}
                 </p>
                 <Badge variant={user?.role === "admin" ? "default" : "secondary"} className="text-xs">

@@ -66,12 +66,12 @@ export default function WorkspaceBoard() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
       
       <div className="ml-64 flex-1">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-card border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div 
@@ -81,8 +81,8 @@ export default function WorkspaceBoard() {
                 <i className={`${workspace.icon} text-white text-sm`}></i>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{workspace.name}</h1>
-                <p className="text-gray-600 mt-1">{workspace.description}</p>
+                <h1 className="text-2xl font-bold text-foreground">{workspace.name}</h1>
+                <p className="text-muted-foreground mt-1">{workspace.description}</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -97,7 +97,7 @@ export default function WorkspaceBoard() {
                   </Avatar>
                 ))}
                 {workspace.members.length > 4 && (
-                  <div className="w-8 h-8 bg-gray-100 rounded-full border-2 border-white flex items-center justify-center text-xs text-gray-600">
+                  <div className="w-8 h-8 bg-muted rounded-full border-2 border-background flex items-center justify-center text-xs text-muted-foreground">
                     +{workspace.members.length - 4}
                   </div>
                 )}
@@ -107,7 +107,7 @@ export default function WorkspaceBoard() {
               </div>
               
               {/* View Toggle */}
-              <div className="flex bg-gray-100 rounded-lg p-1">
+              <div className="flex bg-muted rounded-lg p-1">
                 <Button
                   variant={viewMode === "kanban" ? "default" : "ghost"}
                   size="sm"
@@ -126,7 +126,10 @@ export default function WorkspaceBoard() {
                 </Button>
               </div>
               
-              <Button onClick={() => setShowCreateTask(true)}>
+              <Button 
+                onClick={() => setShowCreateTask(true)}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 New Task
               </Button>
@@ -140,18 +143,18 @@ export default function WorkspaceBoard() {
             <KanbanBoard workspaceId={workspaceId} />
           )}
           {viewMode === "list" && (
-            <div className="text-center text-gray-500 mt-20">
+            <div className="text-center text-muted-foreground mt-20">
               List view coming soon...
             </div>
           )}
         </div>
       </div>
       
-      {showCreateTask && (
-        <CreateTaskModal workspaceId={workspaceId}>
-          <div />
-        </CreateTaskModal>
-      )}
+      <CreateTaskModal 
+        workspaceId={workspaceId} 
+        open={showCreateTask} 
+        onOpenChange={setShowCreateTask}
+      />
     </div>
   );
 }

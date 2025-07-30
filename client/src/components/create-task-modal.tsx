@@ -39,12 +39,16 @@ const formSchema = insertTaskSchema.omit({ createdBy: true });
 type FormData = z.infer<typeof formSchema>;
 
 interface CreateTaskModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   workspaceId: number;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function CreateTaskModal({ children, workspaceId }: CreateTaskModalProps) {
-  const [open, setOpen] = useState(false);
+export function CreateTaskModal({ children, workspaceId, open: controlledOpen, onOpenChange }: CreateTaskModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState("");
   const { toast } = useToast();
@@ -72,10 +76,11 @@ export function CreateTaskModal({ children, workspaceId }: CreateTaskModalProps)
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      return apiRequest(`/api/tasks`, {
-        method: "POST",
-        body: JSON.stringify({ ...data, tags }),
+      const response = await apiRequest("POST", "/api/tasks", {
+        ...data,
+        tags,
       });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
@@ -120,7 +125,11 @@ export function CreateTaskModal({ children, workspaceId }: CreateTaskModalProps)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children && (
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
