@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { registerSchema, type RegisterInput } from "@shared/schema";
 import { CheckCircle, UserPlus } from "lucide-react";
 
@@ -29,8 +28,21 @@ export default function Signup() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: RegisterInput) => {
-      const res = await apiRequest("POST", "/api/auth/register", data);
-      return await res.json();
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       setIsRedirecting(true);

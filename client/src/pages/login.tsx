@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { loginSchema, type LoginInput } from "@shared/schema";
 import { CheckCircle, LogIn } from "lucide-react";
 
@@ -26,8 +25,21 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginInput) => {
-      const res = await apiRequest("POST", "/api/auth/login", data);
-      return await res.json();
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       setIsRedirecting(true);
