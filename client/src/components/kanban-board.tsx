@@ -23,8 +23,10 @@ export function KanbanBoard({ workspaceId }: KanbanBoardProps) {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
 
   const { data: tasks = [], isLoading } = useQuery<TaskWithDetails[]>({
-    queryKey: ["/api/tasks", { workspaceId }],
+    queryKey: ["/api/tasks", `workspaceId=${workspaceId}`],
+    queryFn: () => fetch(`/api/tasks?workspaceId=${workspaceId}`, { credentials: 'include' }).then(res => res.json()),
     retry: false,
+    enabled: !!workspaceId,
   });
 
   const getTasksByStatus = (status: string) => {

@@ -53,12 +53,12 @@ export default function WorkspaceBoard() {
 
   if (!workspace) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-background">
         <Sidebar />
         <div className="ml-64 flex-1 flex items-center justify-center">
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-gray-900">Workspace not found</h2>
-            <p className="text-gray-600 mt-2">The workspace you're looking for doesn't exist.</p>
+            <h2 className="text-xl font-semibold text-foreground">Workspace not found</h2>
+            <p className="text-muted-foreground mt-2">The workspace you're looking for doesn't exist.</p>
           </div>
         </div>
       </div>
