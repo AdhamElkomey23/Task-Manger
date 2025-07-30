@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Trash2, Plus, MessageSquare, Brain, Sparkles, Send, Loader2 } from "luc
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import Sidebar from "@/components/sidebar";
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -36,16 +38,33 @@ export default function BrainPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, toast]);
 
   // Fetch conversations
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
     queryKey: ["/api/brain/conversations"],
+    enabled: isAuthenticated,
   });
 
   // Fetch current conversation
   const { data: currentConversation } = useQuery({
     queryKey: ["/api/brain/conversations", selectedConversation],
-    enabled: !!selectedConversation,
+    enabled: !!selectedConversation && isAuthenticated,
   });
 
   // Create new conversation mutation
@@ -130,16 +149,25 @@ export default function BrainPage() {
     }
   };
 
+  if (isLoading || !isAuthenticated) return null;
+
   if (conversationsLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex">
+        <Sidebar />
+        <div className="flex-1 ml-64">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="flex">
+      <Sidebar />
+      <div className="flex-1 ml-64 p-6">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <Brain className="h-8 w-8 text-purple-600" />
@@ -325,6 +353,7 @@ export default function BrainPage() {
             </>
           )}
         </Card>
+      </div>
       </div>
     </div>
   );
