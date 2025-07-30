@@ -14,7 +14,7 @@ import Team from "@/pages/team";
 import Data from "@/pages/data";
 import Analysis from "@/pages/analysis";
 import CreateTask from "@/pages/create-task";
-import ModernWorkspaceBoard from "@/pages/workspace-board-modern";
+import WorkspaceBoard from "@/pages/workspace-board";
 import AdminAnalytics from "@/pages/admin-analytics";
 import AdminUsers from "@/pages/admin-users";
 import AdminWorkspaces from "@/pages/admin-workspaces";
@@ -24,13 +24,25 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
+      {!isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Signup} />
+          <Route component={() => <Login />} />
         </>
       ) : (
         <>
@@ -41,13 +53,13 @@ function Router() {
           <Route path="/analysis" component={Analysis} />
           <Route path="/brain" component={BrainPage} />
           <Route path="/create-task" component={CreateTask} />
-          <Route path="/workspace/:id" component={ModernWorkspaceBoard} />
+          <Route path="/workspace/:id" component={WorkspaceBoard} />
           <Route path="/admin/analytics" component={AdminAnalytics} />
           <Route path="/admin/users" component={AdminUsers} />
           <Route path="/admin/workspaces" component={AdminWorkspaces} />
+          <Route component={NotFound} />
         </>
       )}
-      <Route component={NotFound} />
     </Switch>
   );
 }
