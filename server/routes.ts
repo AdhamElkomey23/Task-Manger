@@ -6,11 +6,16 @@ import {
   insertWorkspaceSchema,
   insertTaskSchema,
   insertCommentSchema,
+  insertBrainConversationSchema,
   registerSchema,
   loginSchema,
+  chatMessageSchema,
+  brainConversationSchema,
   type User,
   type RegisterInput,
   type LoginInput,
+  type ChatMessageInput,
+  type BrainConversationInput,
 } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -614,6 +619,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting file:", error);
       res.status(500).json({ message: "Failed to delete file" });
+    }
+  });
+
+  // Brain ChatGPT integration routes
+  app.get('/api/brain/conversations', isAuthenticated, async (req: any, res) => {
+    try {
+      const conversations = await storage.getBrainConversations(req.session.userId);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+
+  app.post('/api/brain/conversations', isAuthenticated, async (req: any, res) => {
+    try {
+      const validatedData = brainConversationSchema.parse(req.body);
+      const conversation = await storage.createBrainConversation({
+        ...validatedData,
+        userId: req.session.userId,
+        messages: [],
+      });
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      res.status(500).json({ message: "Failed to create conversation" });
+    }
+  });
+
+  app.get('/api/brain/conversations/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const conversation = await storage.getBrainConversation(id, req.session.userId);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error fetching conversation:", error);
+      res.status(500).json({ message: "Failed to fetch conversation" });
+    }
+  });
+
+  app.post('/api/brain/chat', isAuthenticated, async (req: any, res) => {
+    try {
+      const validatedData = chatMessageSchema.parse(req.body);
+      const { chatWithBrain } = await import('./openai');
+      
+      let conversation;
+      if (validatedData.conversationId) {
+        conversation = await storage.getBrainConversation(validatedData.conversationId, req.session.userId);
+        if (!conversation) {
+          return res.status(404).json({ message: "Conversation not found" });
+        }
+      } else {
+        // Create a new conversation if none specified
+        const title = validatedData.message.slice(0, 50) + (validatedData.message.length > 50 ? "..." : "");
+        conversation = await storage.createBrainConversation({
+          title,
+          userId: req.session.userId,
+          messages: [],
+          workspaceId: validatedData.workspaceId,
+          taskId: validatedData.taskId,
+        });
+      }
+
+      // Add user message to conversation
+      const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
+      const userMessage = {
+        role: "user" as const,
+        content: validatedData.message,
+        timestamp: new Date(),
+      };
+      messages.push(userMessage);
+
+      // Get AI response
+      const brainResponse = await chatWithBrain(messages);
+      
+      // Add AI response to conversation
+      const aiMessage = {
+        role: "assistant" as const,
+        content: brainResponse.message,
+        timestamp: new Date(),
+      };
+      messages.push(aiMessage);
+
+      // Update conversation with new messages
+      const updatedConversation = await storage.updateBrainConversation(conversation.id, {
+        messages,
+      });
+
+      res.json({
+        conversation: updatedConversation,
+        response: brainResponse.message,
+        usage: brainResponse.usage,
+      });
+    } catch (error) {
+      console.error("Error in brain chat:", error);
+      res.status(500).json({ message: "Failed to process chat message" });
+    }
+  });
+
+  app.delete('/api/brain/conversations/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteBrainConversation(id, req.session.userId);
+      res.json({ message: "Conversation deleted" });
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      res.status(500).json({ message: "Failed to delete conversation" });
+    }
+  });
+
+  app.post('/api/brain/task-suggestions', isAuthenticated, async (req: any, res) => {
+    try {
+      const { taskTitle, description, workspaceContext } = req.body;
+      const { generateTaskSuggestions } = await import('./openai');
+      
+      const suggestions = await generateTaskSuggestions(taskTitle, description, workspaceContext);
+      res.json({ suggestions });
+    } catch (error) {
+      console.error("Error generating task suggestions:", error);
+      res.status(500).json({ message: "Failed to generate task suggestions" });
+    }
+  });
+
+  app.post('/api/brain/productivity-analysis', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { analyzeProductivity } = await import('./openai');
+      const analytics = await storage.getAnalytics();
+      
+      const analysis = await analyzeProductivity({
+        completed: analytics.completedTasks,
+        inProgress: analytics.inProgressTasks,
+        overdue: analytics.overdueTasks,
+        totalHours: analytics.totalHours || 0,
+        period: req.body.period || "current",
+      });
+      
+      res.json({ analysis });
+    } catch (error) {
+      console.error("Error analyzing productivity:", error);
+      res.status(500).json({ message: "Failed to analyze productivity" });
     }
   });
 

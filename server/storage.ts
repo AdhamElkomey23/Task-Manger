@@ -6,6 +6,7 @@ import {
   attachments,
   workspaceMembers,
   files,
+  brainConversations,
   type User,
   type UpsertUser,
   type InsertWorkspace,
@@ -20,6 +21,8 @@ import {
   type WorkspaceMember,
   type InsertFile,
   type File,
+  type InsertBrainConversation,
+  type BrainConversation,
   type TaskWithDetails,
   type WorkspaceWithDetails,
 } from "@shared/schema";
@@ -63,7 +66,9 @@ export interface IStorage {
   getAnalytics(dateRange?: { from: Date; to: Date }): Promise<{
     totalTasks: number;
     completedTasks: number;
+    inProgressTasks: number;
     overdueTasks: number;
+    totalHours: number;
     avgCompletionTime: number;
     tasksByUser: Array<{ user: User; completedTasks: number; totalTasks: number }>;
     tasksByWorkspace: Array<{ workspace: Workspace; completedTasks: number; totalTasks: number }>;
@@ -78,6 +83,13 @@ export interface IStorage {
   getAllFiles(): Promise<(File & { uploader: User })[]>;
   createFile(file: InsertFile): Promise<File>;
   deleteFile(id: number): Promise<void>;
+  
+  // Brain conversation operations
+  getBrainConversations(userId: string): Promise<BrainConversation[]>;
+  getBrainConversation(id: number, userId: string): Promise<BrainConversation | undefined>;
+  createBrainConversation(conversation: InsertBrainConversation): Promise<BrainConversation>;
+  updateBrainConversation(id: number, updates: Partial<InsertBrainConversation>): Promise<BrainConversation>;
+  deleteBrainConversation(id: number, userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -100,7 +112,7 @@ export class DatabaseStorage implements IStorage {
         password: user.password,
         firstName: user.firstName || null,
         lastName: user.lastName || null,
-        role: user.role || 'worker',
+        role: (user.role as "worker" | "admin") || 'worker',
       })
       .returning();
     return newUser;
@@ -427,10 +439,15 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(tasks, eq(workspaces.id, tasks.workspaceId))
       .groupBy(workspaces.id);
 
+    const inProgressTasks = allTasks.filter(t => t.status === "in-progress");
+    const totalHours = allTasks.reduce((sum, task) => sum + (task.actualHours || 0), 0);
+
     return {
       totalTasks: allTasks.length,
       completedTasks: completedTasks.length,
+      inProgressTasks: inProgressTasks.length,
       overdueTasks: overdueTasks.length,
+      totalHours,
       avgCompletionTime: Math.round(avgCompletionTime * 10) / 10,
       tasksByUser: userStats.map(stat => ({
         user: stat.user,
@@ -508,6 +525,46 @@ export class DatabaseStorage implements IStorage {
     
     // Delete from database
     await db.delete(files).where(eq(files.id, id));
+  }
+
+  async getBrainConversations(userId: string): Promise<BrainConversation[]> {
+    const conversations = await db
+      .select()
+      .from(brainConversations)
+      .where(and(eq(brainConversations.userId, userId), eq(brainConversations.isArchived, false)))
+      .orderBy(desc(brainConversations.updatedAt));
+    return conversations;
+  }
+
+  async getBrainConversation(id: number, userId: string): Promise<BrainConversation | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(brainConversations)
+      .where(and(eq(brainConversations.id, id), eq(brainConversations.userId, userId)));
+    return conversation;
+  }
+
+  async createBrainConversation(conversationData: InsertBrainConversation): Promise<BrainConversation> {
+    const [newConversation] = await db
+      .insert(brainConversations)
+      .values(conversationData)
+      .returning();
+    return newConversation;
+  }
+
+  async updateBrainConversation(id: number, updates: Partial<InsertBrainConversation>): Promise<BrainConversation> {
+    const [updatedConversation] = await db
+      .update(brainConversations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(brainConversations.id, id))
+      .returning();
+    return updatedConversation;
+  }
+
+  async deleteBrainConversation(id: number, userId: string): Promise<void> {
+    await db
+      .delete(brainConversations)
+      .where(and(eq(brainConversations.id, id), eq(brainConversations.userId, userId)));
   }
 }
 

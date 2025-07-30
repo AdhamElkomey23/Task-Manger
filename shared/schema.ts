@@ -107,6 +107,18 @@ export const files = pgTable("files", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const brainConversations = pgTable("brain_conversations", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  messages: jsonb("messages").notNull().default([]), // Array of ChatMessage objects
+  workspaceId: integer("workspace_id").references(() => workspaces.id),
+  taskId: integer("task_id").references(() => tasks.id),
+  isArchived: boolean("is_archived").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   tasks: many(tasks, { relationName: "assignedTasks" }),
@@ -175,6 +187,21 @@ export const filesRelations = relations(files, ({ one }) => ({
   }),
 }));
 
+export const brainConversationsRelations = relations(brainConversations, ({ one }) => ({
+  user: one(users, {
+    fields: [brainConversations.userId],
+    references: [users.id],
+  }),
+  workspace: one(workspaces, {
+    fields: [brainConversations.workspaceId],
+    references: [workspaces.id],
+  }),
+  task: one(tasks, {
+    fields: [brainConversations.taskId],
+    references: [tasks.id],
+  }),
+}));
+
 export const workspaceMembersRelations = relations(workspaceMembers, ({ one }) => ({
   workspace: one(workspaces, {
     fields: [workspaceMembers.workspaceId],
@@ -225,6 +252,12 @@ export const insertFileSchema = createInsertSchema(files).omit({
   updatedAt: true,
 });
 
+export const insertBrainConversationSchema = createInsertSchema(brainConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -240,6 +273,8 @@ export type InsertWorkspaceMember = z.infer<typeof insertWorkspaceMemberSchema>;
 export type WorkspaceMember = typeof workspaceMembers.$inferSelect;
 export type InsertFile = z.infer<typeof insertFileSchema>;
 export type File = typeof files.$inferSelect;
+export type InsertBrainConversation = z.infer<typeof insertBrainConversationSchema>;
+export type BrainConversation = typeof brainConversations.$inferSelect;
 
 // Extended types for API responses
 export type TaskWithDetails = Task & {
@@ -275,3 +310,20 @@ export const loginSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+
+// Brain chat schemas
+export const chatMessageSchema = z.object({
+  message: z.string().min(1, "Message cannot be empty"),
+  conversationId: z.number().optional(),
+  workspaceId: z.number().optional(),
+  taskId: z.number().optional(),
+});
+
+export const brainConversationSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  workspaceId: z.number().optional(),
+  taskId: z.number().optional(),
+});
+
+export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
+export type BrainConversationInput = z.infer<typeof brainConversationSchema>;

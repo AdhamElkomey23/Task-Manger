@@ -17,6 +17,7 @@ import WorkspaceBoard from "@/pages/workspace-board";
 import AdminAnalytics from "@/pages/admin-analytics";
 import AdminUsers from "@/pages/admin-users";
 import AdminWorkspaces from "@/pages/admin-workspaces";
+import BrainPage from "@/pages/brain";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -37,6 +38,7 @@ function Router() {
           <Route path="/team" component={Team} />
           <Route path="/data" component={Data} />
           <Route path="/analysis" component={Analysis} />
+          <Route path="/brain" component={BrainPage} />
           <Route path="/create-task" component={CreateTask} />
           <Route path="/workspace/:id" component={WorkspaceBoard} />
           <Route path="/admin/analytics" component={AdminAnalytics} />
