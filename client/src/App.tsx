@@ -14,7 +14,7 @@ import Team from "@/pages/team";
 import Data from "@/pages/data";
 import Analysis from "@/pages/analysis";
 import CreateTask from "@/pages/create-task";
-import WorkspaceBoard from "@/pages/workspace-board";
+import WorkspaceBoard from "@/pages/workspace-board-modern";
 import AdminAnalytics from "@/pages/admin-analytics";
 import AdminUsers from "@/pages/admin-users";
 import AdminWorkspaces from "@/pages/admin-workspaces";
