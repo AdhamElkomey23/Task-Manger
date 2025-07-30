@@ -11,6 +11,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Plus, 
   MoreHorizontal, 
@@ -41,9 +48,9 @@ export default function ModernWorkspaceBoard() {
   const [viewMode, setViewMode] = useState<"kanban" | "list">("list");
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [addingTaskToStatus, setAddingTaskToStatus] = useState<string | null>(null);
+  const [addingTask, setAddingTask] = useState(false);
+  const [draggedTask, setDraggedTask] = useState<TaskWithDetails | null>(null);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -75,14 +82,17 @@ export default function ModernWorkspaceBoard() {
 
   // Create task mutation
   const createTaskMutation = useMutation({
-    mutationFn: async (taskData: { title: string; status: string; workspaceId: number }) => {
+    mutationFn: async (taskData: { title: string; status?: string; workspaceId: number }) => {
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(taskData),
+        body: JSON.stringify({
+          ...taskData,
+          status: taskData.status || 'todo'
+        }),
       });
       
       if (!response.ok) {
@@ -94,7 +104,7 @@ export default function ModernWorkspaceBoard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       setNewTaskTitle("");
-      setAddingTaskToStatus(null);
+      setAddingTask(false);
       toast({
         title: "Success",
         description: "Task created successfully",
@@ -109,21 +119,74 @@ export default function ModernWorkspaceBoard() {
     },
   });
 
-  const handleQuickCreateTask = (status: string) => {
+  // Update task mutation
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ taskId, updates }: { taskId: number; updates: Partial<TaskWithDetails> }) => {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updates),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update task');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      setDraggedTask(null);
+      toast({
+        title: "Success",
+        description: "Task updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error", 
+        description: "Failed to update task",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleQuickCreateTask = (status?: string) => {
     if (!newTaskTitle.trim()) return;
     
     createTaskMutation.mutate({
       title: newTaskTitle.trim(),
-      status,
+      status: status || 'todo',
       workspaceId,
     });
   };
 
-  const toggleGroupCollapse = (status: string) => {
-    setCollapsedGroups(prev => ({
-      ...prev,
-      [status]: !prev[status]
-    }));
+  const handleStatusChange = (taskId: number, newStatus: "todo" | "in-progress" | "done") => {
+    updateTaskMutation.mutate({
+      taskId,
+      updates: { status: newStatus }
+    });
+  };
+
+  const handleDragStart = (e: React.DragEvent, task: TaskWithDetails) => {
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, newStatus: string) => {
+    e.preventDefault();
+    if (draggedTask && draggedTask.status !== newStatus) {
+      handleStatusChange(draggedTask.id, newStatus);
+    }
+    setDraggedTask(null);
   };
 
   if (isLoading || !isAuthenticated) return null;
@@ -260,37 +323,24 @@ export default function ModernWorkspaceBoard() {
                   </Button>
                 </div>
 
-                {/* Quick Filters */}
+                {/* View Info */}
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                    <Settings className="h-3 w-3 mr-1" />
-                    Subtasks
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                    Columns
-                  </Button>
+                  <span className="text-xs">
+                    {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+                  </span>
                 </div>
               </div>
               
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
-                  <Filter className="h-3 w-3 mr-1" />
-                  Filter
-                </Button>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
-                  Sort
-                </Button>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
-                  Closed
-                </Button>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
-                  Assignee
-                </Button>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
-                  Customize
-                </Button>
                 <Button 
-                  onClick={() => setShowCreateTask(true)}
+                  onClick={() => {
+                    if (viewMode === "list") {
+                      setAddingTask(true);
+                      setNewTaskTitle("");
+                    } else {
+                      setShowCreateTask(true);
+                    }
+                  }}
                   size="sm" 
                   className="bg-blue-600 hover:bg-blue-700 text-white h-7 px-3 text-xs"
                 >
@@ -304,42 +354,8 @@ export default function ModernWorkspaceBoard() {
         {/* Content Area */}
         <div className="flex-1 bg-muted/30">
           {viewMode === "list" ? (
-            /* LIST VIEW - ClickUp Style */
+            /* LIST VIEW - Simple list without status grouping */
             <div className="bg-background">
-              {/* List Header */}
-              <div className="bg-background border-b border-border px-6 py-3">
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-4">
-                    <Button variant="ghost" size="sm" className="h-8 px-2">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Group: Status
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 px-2">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 px-2">
-                      Closed
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 px-2">
-                      Assignee
-                    </Button>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <Button variant="ghost" size="sm" className="h-8 px-2">
-                      Customize
-                    </Button>
-                    <Button 
-                      onClick={() => setShowCreateTask(true)}
-                      size="sm" 
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      Add Task
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
               {/* Column Headers */}
               <div className="bg-background border-b border-border px-6 py-2">
                 <div className="grid grid-cols-12 gap-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -347,238 +363,186 @@ export default function ModernWorkspaceBoard() {
                   <div className="col-span-2">Assignee</div>
                   <div className="col-span-2">Due date</div>
                   <div className="col-span-2">Priority</div>
-                  <div className="col-span-1">Status</div>
-                  <div className="col-span-1">Comments</div>
+                  <div className="col-span-2">Status</div>
                 </div>
               </div>
 
-              {/* Task Groups */}
-              {statusColumns.map((status) => {
-                const statusTasks = getTasksByStatus(status.id);
-                const isCollapsed = collapsedGroups[status.id];
-                
-                return (
-                  <div key={status.id} className="border-b border-border">
-                    {/* Group Header */}
-                    <div 
-                      className="bg-background hover:bg-muted/50 px-6 py-3 cursor-pointer flex items-center justify-between"
-                      onClick={() => toggleGroupCollapse(status.id)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        {isCollapsed ? (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-3 h-3 rounded-full ${
-                            status.id === 'todo' ? 'bg-gray-400' :
-                            status.id === 'in-progress' ? 'bg-blue-500' :
-                            'bg-green-500'
-                          }`} />
-                          <span className="font-medium text-foreground text-sm uppercase tracking-wide">
-                            {status.title}
-                          </span>
-                          <span className="text-muted-foreground text-sm">
-                            {statusTasks.length}
-                          </span>
-                        </div>
-                      </div>
-                      
+              {/* Quick Add Task Row */}
+              {addingTask && (
+                <div className="bg-muted/30 px-6 py-2 border-b border-border">
+                  <div className="grid grid-cols-12 gap-4 items-center">
+                    <div className="col-span-4">
+                      <Input
+                        placeholder="Task name"
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleQuickCreateTask();
+                          } else if (e.key === 'Escape') {
+                            setAddingTask(false);
+                            setNewTaskTitle("");
+                          }
+                        }}
+                        className="h-8 text-sm"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="col-span-8 flex items-center space-x-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleQuickCreateTask()}
+                        disabled={!newTaskTitle.trim() || createTaskMutation.isPending}
+                        className="h-6 px-3 text-xs"
+                      >
+                        {createTaskMutation.isPending ? "Adding..." : "Add"}
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAddingTaskToStatus(status.id);
+                        onClick={() => {
+                          setAddingTask(false);
                           setNewTaskTitle("");
                         }}
+                        className="h-6 px-3 text-xs"
                       >
-                        <Plus className="h-4 w-4" />
+                        Cancel
                       </Button>
                     </div>
+                  </div>
+                </div>
+              )}
 
-                    {/* Quick Add Task Row */}
-                    {addingTaskToStatus === status.id && (
-                      <div className="bg-muted/30 px-6 py-2 border-b border-border">
-                        <div className="grid grid-cols-12 gap-4 items-center">
-                          <div className="col-span-4">
-                            <Input
-                              placeholder="Task name"
-                              value={newTaskTitle}
-                              onChange={(e) => setNewTaskTitle(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleQuickCreateTask(status.id);
-                                } else if (e.key === 'Escape') {
-                                  setAddingTaskToStatus(null);
-                                  setNewTaskTitle("");
-                                }
-                              }}
-                              className="h-8 text-sm"
-                              autoFocus
-                            />
-                          </div>
-                          <div className="col-span-8 flex items-center space-x-2">
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleQuickCreateTask(status.id)}
-                              disabled={!newTaskTitle.trim() || createTaskMutation.isPending}
-                              className="h-6 px-3 text-xs"
-                            >
-                              {createTaskMutation.isPending ? "Adding..." : "Add"}
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => {
-                                setAddingTaskToStatus(null);
-                                setNewTaskTitle("");
-                              }}
-                              className="h-6 px-3 text-xs"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tasks */}
-                    {!isCollapsed && (
-                      <div>
-                        {statusTasks.length === 0 ? (
-                          <div className="px-6 py-4 text-center text-muted-foreground text-sm">
-                            {addingTaskToStatus !== status.id && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => {
-                                  setAddingTaskToStatus(status.id);
-                                  setNewTaskTitle("");
-                                }}
-                                className="text-muted-foreground hover:text-foreground"
-                              >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Task
-                              </Button>
-                            )}
-                          </div>
-                        ) : (
-                          statusTasks.map((task, index) => (
-                            <div 
-                              key={task.id} 
-                              className="group hover:bg-muted/50 px-6 py-3 border-b border-border/50 cursor-pointer"
-                            >
-                              <div className="grid grid-cols-12 gap-4 items-center">
-                                {/* Task Name */}
-                                <div className="col-span-4 flex items-center space-x-3">
-                                  <Checkbox className="w-4 h-4" />
-                                  <span className="text-sm font-medium text-foreground hover:text-blue-600">
-                                    {task.title}
-                                  </span>
-                                </div>
-                                
-                                {/* Assignee */}
-                                <div className="col-span-2">
-                                  {task.assignee ? (
-                                    <div className="flex items-center space-x-2">
-                                      <Avatar className="h-6 w-6">
-                                        <AvatarImage src={undefined} />
-                                        <AvatarFallback className="text-xs">
-                                          {task.assignee.firstName?.[0]}{task.assignee.lastName?.[0]}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                    </div>
-                                  ) : (
-                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground">
-                                      <User className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </div>
-                                
-                                {/* Due Date */}
-                                <div className="col-span-2">
-                                  {task.dueDate ? (
-                                    <span className="text-sm text-muted-foreground">
-                                      {new Date(task.dueDate).toLocaleDateString()}
-                                    </span>
-                                  ) : (
-                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground">
-                                      <Calendar className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </div>
-                                
-                                {/* Priority */}
-                                <div className="col-span-2">
-                                  <Badge 
-                                    variant="outline" 
-                                    className={`text-xs ${getPriorityColor(task.priority)}`}
-                                  >
-                                    {task.priority.toUpperCase()}
-                                  </Badge>
-                                </div>
-                                
-                                {/* Status */}
-                                <div className="col-span-1">
-                                  <Badge 
-                                    variant="outline" 
-                                    className={`text-xs ${
-                                      task.status === 'todo' ? 'bg-gray-100 text-gray-700' :
-                                      task.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
-                                      'bg-green-100 text-green-700'
-                                    }`}
-                                  >
-                                    {task.status === 'todo' ? 'TO DO' : 
-                                     task.status === 'in-progress' ? 'IN PROGRESS' : 'COMPLETE'}
-                                  </Badge>
-                                </div>
-                                
-                                {/* Comments */}
-                                <div className="col-span-1">
-                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground">
-                                    <MessageSquare className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                        
-                        {/* Add Task Button at bottom of group */}
-                        {addingTaskToStatus !== status.id && (
-                          <div className="px-6 py-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => {
-                                setAddingTaskToStatus(status.id);
-                                setNewTaskTitle("");
-                              }}
-                              className="text-muted-foreground hover:text-foreground text-sm"
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Task
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+              {/* Tasks */}
+              <div>
+                {filteredTasks.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground">
+                    <p className="text-sm mb-4">No tasks found</p>
+                    {!addingTask && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setAddingTask(true);
+                          setNewTaskTitle("");
+                        }}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Task
+                      </Button>
                     )}
                   </div>
-                );
-              })}
+                ) : (
+                  filteredTasks.map((task) => (
+                    <div 
+                      key={task.id} 
+                      className="group hover:bg-muted/50 px-6 py-3 border-b border-border/50"
+                    >
+                      <div className="grid grid-cols-12 gap-4 items-center">
+                        {/* Task Name */}
+                        <div className="col-span-4 flex items-center space-x-3">
+                          <Checkbox className="w-4 h-4" />
+                          <span className="text-sm font-medium text-foreground hover:text-blue-600 cursor-pointer">
+                            {task.title}
+                          </span>
+                        </div>
+                        
+                        {/* Assignee */}
+                        <div className="col-span-2">
+                          {task.assignee ? (
+                            <div className="flex items-center space-x-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={undefined} />
+                                <AvatarFallback className="text-xs">
+                                  {task.assignee.firstName?.[0]}{task.assignee.lastName?.[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                            </div>
+                          ) : (
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground">
+                              <User className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {/* Due Date */}
+                        <div className="col-span-2">
+                          {task.dueDate ? (
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(task.dueDate).toLocaleDateString()}
+                            </span>
+                          ) : (
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {/* Priority */}
+                        <div className="col-span-2">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${getPriorityColor(task.priority)}`}
+                          >
+                            {task.priority.toUpperCase()}
+                          </Badge>
+                        </div>
+                        
+                        {/* Status Dropdown */}
+                        <div className="col-span-2">
+                          <Select 
+                            value={task.status} 
+                            onValueChange={(value) => handleStatusChange(task.id, value)}
+                          >
+                            <SelectTrigger className="h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todo">To Do</SelectItem>
+                              <SelectItem value="in-progress">In Progress</SelectItem>
+                              <SelectItem value="done">Done</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+                
+                {/* Add Task Button at bottom */}
+                {!addingTask && filteredTasks.length > 0 && (
+                  <div className="px-6 py-4">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setAddingTask(true);
+                        setNewTaskTitle("");
+                      }}
+                      className="text-muted-foreground hover:text-foreground text-sm"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Task
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
-            /* BOARD VIEW - ClickUp Style */
+            /* BOARD VIEW - Drag and Drop Kanban */
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                 {statusColumns.map((column) => {
                   const columnTasks = getTasksByStatus(column.id);
                   
                   return (
-                    <div key={column.id} className="flex flex-col bg-background rounded-lg">
+                    <div 
+                      key={column.id} 
+                      className="flex flex-col bg-background rounded-lg border"
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, column.id)}
+                    >
                       {/* Column Header */}
                       <div className="p-4 border-b border-border">
                         <div className="flex items-center justify-between">
@@ -595,66 +559,20 @@ export default function ModernWorkspaceBoard() {
                               {column.count}
                             </Badge>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0"
-                            onClick={() => {
-                              setAddingTaskToStatus(column.id);
-                              setNewTaskTitle("");
-                            }}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
                       
                       {/* Tasks */}
                       <div className="flex-1 p-4 space-y-3 min-h-[500px]">
-                        {/* Quick Add Task */}
-                        {addingTaskToStatus === column.id && (
-                          <div className="p-3 border border-dashed border-border rounded-lg bg-muted/50">
-                            <Input
-                              placeholder="Task name"
-                              value={newTaskTitle}
-                              onChange={(e) => setNewTaskTitle(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleQuickCreateTask(column.id);
-                                } else if (e.key === 'Escape') {
-                                  setAddingTaskToStatus(null);
-                                  setNewTaskTitle("");
-                                }
-                              }}
-                              className="h-8 text-sm mb-2"
-                              autoFocus
-                            />
-                            <div className="flex space-x-2">
-                              <Button 
-                                size="sm" 
-                                onClick={() => handleQuickCreateTask(column.id)}
-                                disabled={!newTaskTitle.trim() || createTaskMutation.isPending}
-                                className="h-6 px-3 text-xs"
-                              >
-                                {createTaskMutation.isPending ? "Adding..." : "Add Task"}
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => {
-                                  setAddingTaskToStatus(null);
-                                  setNewTaskTitle("");
-                                }}
-                                className="h-6 px-3 text-xs"
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
                         {columnTasks.map((task) => (
-                          <Card key={task.id} className="group hover:shadow-md transition-all duration-200 cursor-pointer">
+                          <Card 
+                            key={task.id} 
+                            className={`group hover:shadow-md transition-all duration-200 cursor-move ${
+                              draggedTask?.id === task.id ? 'opacity-50' : ''
+                            }`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, task)}
+                          >
                             <CardContent className="p-3">
                               <div className="space-y-2">
                                 {/* Task Header */}
@@ -662,9 +580,14 @@ export default function ModernWorkspaceBoard() {
                                   <h4 className="text-sm font-medium text-foreground group-hover:text-blue-600 transition-colors">
                                     {task.title}
                                   </h4>
-                                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <MoreHorizontal className="h-3 w-3" />
-                                  </Button>
+                                  <div className="text-xs text-muted-foreground">
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-xs ${getPriorityColor(task.priority)}`}
+                                    >
+                                      {task.priority.charAt(0).toUpperCase()}
+                                    </Badge>
+                                  </div>
                                 </div>
                                 
                                 {/* Task Meta */}
@@ -690,15 +613,6 @@ export default function ModernWorkspaceBoard() {
                                       </div>
                                     )}
                                   </div>
-                                  
-                                  <div className="flex items-center space-x-1">
-                                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground">
-                                      <MessageSquare className="h-3 w-3" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground">
-                                      <Tag className="h-3 w-3" />
-                                    </Button>
-                                  </div>
                                 </div>
                               </div>
                             </CardContent>
@@ -706,20 +620,24 @@ export default function ModernWorkspaceBoard() {
                         ))}
                         
                         {/* Add Task Button */}
-                        {addingTaskToStatus !== column.id && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => {
-                              setAddingTaskToStatus(column.id);
-                              setNewTaskTitle("");
-                            }}
-                            className="w-full justify-start text-muted-foreground hover:text-foreground border border-dashed border-border rounded-lg h-10"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Task
-                          </Button>
-                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            const newTitle = prompt("Enter task name:");
+                            if (newTitle?.trim()) {
+                              createTaskMutation.mutate({
+                                title: newTitle.trim(),
+                                status: column.id,
+                                workspaceId,
+                              });
+                            }
+                          }}
+                          className="w-full justify-start text-muted-foreground hover:text-foreground border border-dashed border-border rounded-lg h-10"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Task
+                        </Button>
                       </div>
                     </div>
                   );
