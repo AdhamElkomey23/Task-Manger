@@ -69,8 +69,10 @@ export default function BrainPage() {
 
   // Create new conversation mutation
   const createConversationMutation = useMutation({
-    mutationFn: (title: string) => 
-      apiRequest(`/api/brain/conversations`, "POST", { title }),
+    mutationFn: async (title: string) => {
+      const response = await apiRequest("POST", "/api/brain/conversations", { title });
+      return response.json();
+    },
     onSuccess: (newConversation: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/brain/conversations"] });
       setSelectedConversation(newConversation.id);
@@ -79,8 +81,10 @@ export default function BrainPage() {
 
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: (data: { message: string; conversationId?: number }) =>
-      apiRequest(`/api/brain/chat`, "POST", data),
+    mutationFn: async (data: { message: string; conversationId?: number }) => {
+      const response = await apiRequest("POST", "/api/brain/chat", data);
+      return response.json();
+    },
     onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/brain/conversations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/brain/conversations", selectedConversation] });
@@ -102,8 +106,10 @@ export default function BrainPage() {
 
   // Delete conversation mutation
   const deleteConversationMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiRequest(`/api/brain/conversations/${id}`, "DELETE"),
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/brain/conversations/${id}`);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/brain/conversations"] });
       if (selectedConversation) {
