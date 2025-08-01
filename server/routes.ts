@@ -531,6 +531,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
       });
       
+      // Automatically add new user to all existing workspaces
+      const allWorkspaces = await storage.getWorkspaces(req.session.userId, req.session.user.role);
+      for (const workspace of allWorkspaces) {
+        try {
+          await storage.addWorkspaceMember(workspace.id, user.id);
+        } catch (error) {
+          console.log(`Failed to add user to workspace ${workspace.id}:`, error);
+          // Continue with other workspaces even if one fails
+        }
+      }
+      
       // Don't return the password in the response
       const { password, ...userResponse } = user;
       res.json(userResponse);
@@ -569,6 +580,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting user:", error);
       res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Workspace membership routes
+  app.post('/api/workspaces/:id/members', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const workspaceId = parseInt(req.params.id);
+      const { userId } = req.body;
+      
+      const member = await storage.addWorkspaceMember(workspaceId, userId);
+      res.json(member);
+    } catch (error) {
+      console.error("Error adding workspace member:", error);
+      res.status(500).json({ message: "Failed to add workspace member" });
+    }
+  });
+
+  app.delete('/api/workspaces/:id/members/:userId', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const workspaceId = parseInt(req.params.id);
+      const userId = req.params.userId;
+      
+      await storage.removeWorkspaceMember(workspaceId, userId);
+      res.json({ message: "Member removed from workspace" });
+    } catch (error) {
+      console.error("Error removing workspace member:", error);
+      res.status(500).json({ message: "Failed to remove workspace member" });
+    }
+  });
+
+  // Quick fix: Add all existing users to all workspaces (admin only)
+  app.post('/api/admin/sync-workspace-members', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const allWorkspaces = await storage.getWorkspaces(req.session.userId, req.session.user.role);
+      
+      let addedCount = 0;
+      for (const workspace of allWorkspaces) {
+        for (const user of allUsers) {
+          try {
+            // Try to add user to workspace (will fail silently if already exists)
+            await storage.addWorkspaceMember(workspace.id, user.id);
+            addedCount++;
+          } catch (error) {
+            // User likely already exists in workspace, continue
+          }
+        }
+      }
+      
+      res.json({ 
+        message: "Workspace members synchronized",
+        addedMemberships: addedCount,
+        totalUsers: allUsers.length,
+        totalWorkspaces: allWorkspaces.length
+      });
+    } catch (error) {
+      console.error("Error syncing workspace members:", error);
+      res.status(500).json({ message: "Failed to sync workspace members" });
     }
   });
 

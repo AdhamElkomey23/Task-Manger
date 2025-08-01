@@ -528,11 +528,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBrainConversations(userId: string): Promise<BrainConversation[]> {
+    // For admin users, show all conversations from all workspaces they have access to
+    const user = await this.getUser(userId);
+    if (user?.role === 'admin') {
+      const conversations = await db
+        .select()
+        .from(brainConversations)
+        .where(eq(brainConversations.isArchived, false))
+        .orderBy(desc(brainConversations.updatedAt));
+      return conversations;
+    }
+    
+    // For regular users, show their own conversations plus workspace conversations they have access to
+    const userWorkspaces = await this.getWorkspaces(userId, user?.role || 'worker');
+    const workspaceIds = userWorkspaces.map(w => w.id);
+    
     const conversations = await db
       .select()
       .from(brainConversations)
-      .where(and(eq(brainConversations.userId, userId), eq(brainConversations.isArchived, false)))
+      .where(
+        and(
+          eq(brainConversations.isArchived, false),
+          sql`${brainConversations.userId} = ${userId} OR ${brainConversations.workspaceId} = ANY(${workspaceIds})`
+        )
+      )
       .orderBy(desc(brainConversations.updatedAt));
+    
     return conversations;
   }
 
