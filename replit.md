@@ -164,3 +164,6 @@ Functionality: WordPress-style user management, analytics for productivity track
 - **Scrolling Fix**: Resolved modal scrolling issue - content area now scrolls independently with fixed action buttons
 - **Accessibility**: Save/cancel buttons remain accessible at bottom of modal even with long content and multiple images
 - **User Experience**: Tasks clickable from both list view and kanban board view to open rich editing interface
+- **Image Persistence Fix**: Fixed issue where uploaded images disappeared after saving tasks - now properly stores contentBlocks in database
+- **Hover Button Access**: Replaced clickable task names with hover buttons (⋯) for better UX
+- **Comments Repositioning**: Moved comments section to right sidebar under Properties section for cleaner layout matching user design preferences

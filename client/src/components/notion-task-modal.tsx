@@ -428,63 +428,6 @@ export function NotionTaskModal({ task, open, onOpenChange }: NotionTaskModalPro
                     Click to add description, images, or links...
                   </div>
                 )}
-
-                {/* Comments Section */}
-                <div className="px-6 py-6 border-t border-gray-200 mt-8">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <MessageSquare className="w-5 h-5 mr-2" />
-                    Comments ({task.comments?.length || 0})
-                  </h3>
-                  
-                  {/* Comment List */}
-                  <div className="space-y-4 mb-6">
-                    {task.comments && task.comments.length > 0 ? (
-                      task.comments.map((comment) => (
-                        <div key={comment.id} className="flex space-x-3">
-                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                            {comment.author.firstName?.[0]}{comment.author.lastName?.[0]}
-                          </div>
-                          <div className="flex-1">
-                            <div className="bg-gray-50 rounded-lg p-3">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <span className="font-medium text-sm">
-                                  {comment.author.firstName} {comment.author.lastName}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {comment.createdAt ? format(new Date(comment.createdAt), "MMM d, h:mm a") : ""}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-700">{comment.content}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500 text-sm">No comments yet</p>
-                    )}
-                  </div>
-
-                  {/* Add Comment */}
-                  <div className="flex space-x-3">
-                    <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <Textarea
-                        placeholder="Write a comment..."
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        className="resize-none"
-                        rows={2}
-                      />
-                      <Button 
-                        onClick={() => addCommentMutation.mutate(newComment)}
-                        disabled={!newComment.trim() || addCommentMutation.isPending}
-                        size="sm"
-                      >
-                        {addCommentMutation.isPending ? "Adding..." : "Comment"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -560,6 +503,63 @@ export function NotionTaskModal({ task, open, onOpenChange }: NotionTaskModalPro
                   </div>
                 </div>
               )}
+
+              {/* Comments Section */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Comments ({task.comments?.length || 0})
+                </h3>
+                
+                {/* Comment List */}
+                <div className="space-y-3 mb-4">
+                  {task.comments && task.comments.length > 0 ? (
+                    task.comments.map((comment) => (
+                      <div key={comment.id} className="space-y-2">
+                        <div className="flex items-start space-x-2">
+                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                            {comment.author.firstName?.[0]}{comment.author.lastName?.[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="bg-white border border-gray-200 rounded-lg p-2">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="font-medium text-xs text-gray-900">
+                                  {comment.author.firstName} {comment.author.lastName}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {comment.createdAt ? format(new Date(comment.createdAt), "MMM d, h:mm a") : ""}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-700">{comment.content}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-xs">No comments yet</p>
+                  )}
+                </div>
+
+                {/* Add Comment */}
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="Write a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="resize-none text-sm"
+                    rows={3}
+                  />
+                  <Button 
+                    onClick={() => addCommentMutation.mutate(newComment)}
+                    disabled={!newComment.trim() || addCommentMutation.isPending}
+                    size="sm"
+                    className="w-full"
+                  >
+                    {addCommentMutation.isPending ? "Adding..." : "Comment"}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
