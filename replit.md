@@ -161,3 +161,6 @@ Functionality: WordPress-style user management, analytics for productivity track
 - **Content Block System**: Implemented modular content blocks that can be added, edited, and removed dynamically
 - **Property Sidebar**: Added comprehensive task properties panel showing status, priority, assignee, dates, and tags
 - **Cross-Platform Consistency**: Updated both kanban board and list view to use the new Notion-style modal
+- **Scrolling Fix**: Resolved modal scrolling issue - content area now scrolls independently with fixed action buttons
+- **Accessibility**: Save/cancel buttons remain accessible at bottom of modal even with long content and multiple images
+- **User Experience**: Tasks clickable from both list view and kanban board view to open rich editing interface
