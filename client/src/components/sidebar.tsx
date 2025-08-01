@@ -157,16 +157,19 @@ export default function Sidebar() {
               </div>
             </Link>
             
-            <Link href="/analysis">
-              <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer ${
-                isActive("/analysis") 
-                  ? "text-blue-600 bg-blue-50" 
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}>
-                <PieChart className="mr-3 h-5 w-5" />
-                Analysis
-              </div>
-            </Link>
+            {/* Only show Analysis page for admin users */}
+            {user?.role === "admin" && (
+              <Link href="/analysis">
+                <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer ${
+                  isActive("/analysis") 
+                    ? "text-blue-600 bg-blue-50" 
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}>
+                  <PieChart className="mr-3 h-5 w-5" />
+                  Analysis
+                </div>
+              </Link>
+            )}
             
             <Link href="/brain">
               <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer ${

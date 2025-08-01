@@ -64,7 +64,7 @@ type AnalyticsData = {
 };
 
 export default function Analysis() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [selectedUser, setSelectedUser] = useState<string>("all");
   const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
 
@@ -89,6 +89,21 @@ export default function Analysis() {
   });
 
   if (isLoading || !isAuthenticated) return null;
+
+  // Only allow admin users to access this page
+  if (user?.role !== "admin") {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="ml-64 flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+            <p className="text-gray-600">Only admin users can access the analytics dashboard.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Calculate real analytics
   const totalUsers = users.length;

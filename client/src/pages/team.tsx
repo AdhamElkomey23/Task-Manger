@@ -16,7 +16,7 @@ import type { User } from "@shared/schema";
 
 export default function Team() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -62,10 +62,10 @@ export default function Team() {
     },
   });
 
-  const filteredUsers = users.filter(user => 
-    user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(teamMember => 
+    teamMember.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    teamMember.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    teamMember.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDeleteUser = async (userId: string) => {
@@ -91,7 +91,12 @@ export default function Team() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Team Management</h1>
-              <p className="text-gray-600 mt-1">Add workers with email/password to access your workspace</p>
+              <p className="text-gray-600 mt-1">
+                {user?.role === "admin" 
+                  ? "Add workers with email/password to access your workspace" 
+                  : "View team members and their information"
+                }
+              </p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="relative">
@@ -104,12 +109,15 @@ export default function Team() {
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               </div>
-              <CreateUserModal>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Worker
-                </Button>
-              </CreateUserModal>
+              {/* Only admin users can add new workers */}
+              {user?.role === "admin" && (
+                <CreateUserModal>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Worker
+                  </Button>
+                </CreateUserModal>
+              )}
             </div>
           </div>
         </header>
@@ -127,49 +135,56 @@ export default function Team() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
+                {filteredUsers.map((teamMember) => (
+                  <TableRow key={teamMember.id}>
                     <TableCell>
                       <div className="flex items-center">
                         <Avatar className="w-10 h-10">
                           <AvatarFallback>
-                            {user.firstName?.[0]}{user.lastName?.[0]}
+                            {teamMember.firstName?.[0]}{teamMember.lastName?.[0]}
                           </AvatarFallback>
                         </Avatar>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {user.firstName} {user.lastName}
+                            {teamMember.firstName} {teamMember.lastName}
                           </div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm text-gray-500">{teamMember.email}</div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                        {user.role}
+                      <Badge variant={teamMember.role === "admin" ? "default" : "secondary"}>
+                        {teamMember.role}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                      {teamMember.createdAt ? new Date(teamMember.createdAt).toLocaleDateString() : "N/A"}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleEditUser(user)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
-                          disabled={deleteUserMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {/* Only admin users can edit/delete users */}
+                      {user?.role === "admin" ? (
+                        <div className="flex items-center space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleEditUser(teamMember)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteUser(teamMember.id)}
+                            disabled={deleteUserMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 italic">
+                          View only
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
