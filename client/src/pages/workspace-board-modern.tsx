@@ -518,7 +518,7 @@ export default function ModernWorkspaceBoard() {
                         <div className="col-span-2">
                           <Select 
                             value={task.status} 
-                            onValueChange={(value) => handleStatusChange(task.id, value)}
+                            onValueChange={(value) => handleStatusChange(task.id, value as "todo" | "in-progress" | "done")}
                           >
                             <SelectTrigger className="h-7 text-xs">
                               <SelectValue />

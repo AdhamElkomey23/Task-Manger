@@ -59,6 +59,7 @@ export const tasks = pgTable("tasks", {
   createdBy: varchar("created_by").references(() => users.id).notNull(),
   tags: text("tags").array().default([]),
   links: text("links").array().default([]), // For external links
+  contentBlocks: jsonb("content_blocks").default([]), // For rich content including images
   estimatedHours: integer("estimated_hours"),
   actualHours: integer("actual_hours"),
   createdAt: timestamp("created_at").defaultNow(),

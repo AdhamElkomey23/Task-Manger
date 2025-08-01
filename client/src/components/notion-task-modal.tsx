@@ -52,37 +52,45 @@ export function NotionTaskModal({ task, open, onOpenChange }: NotionTaskModalPro
 
   // Initialize content blocks from task data
   React.useEffect(() => {
-    if (task) {
-      const blocks: ContentBlock[] = [];
+    if (task && open) {
+      let blocks: ContentBlock[] = [];
       
-      // Add description as text block
-      if (task.description) {
-        blocks.push({
-          id: 'desc-1',
-          type: 'text',
-          content: task.description
-        });
-      }
-      
-      // Add links as URL blocks
-      if (task.links && task.links.length > 0) {
-        task.links.forEach((link, index) => {
+      // Load from contentBlocks if available (new format)
+      if (task.contentBlocks && Array.isArray(task.contentBlocks)) {
+        blocks = task.contentBlocks as ContentBlock[];
+      } else {
+        // Fallback to legacy format
+        // Add description as text block
+        if (task.description) {
           blocks.push({
-            id: `link-${index}`,
-            type: 'url',
-            content: link,
-            title: `Link ${index + 1}`
+            id: 'desc-1',
+            type: 'text',
+            content: task.description
           });
-        });
+        }
+        
+        // Add links as URL blocks
+        if (task.links && task.links.length > 0) {
+          task.links.forEach((link, index) => {
+            blocks.push({
+              id: `link-${index}`,
+              type: 'url',
+              content: link,
+              title: `Link ${index + 1}`
+            });
+          });
+        }
       }
       
       setContentBlocks(blocks);
       setTaskTitle(task.title);
+      setIsEditing(false);
+      setShowAddMenu(false);
     }
-  }, [task]);
+  }, [task, open]);
 
   const updateTaskMutation = useMutation({
-    mutationFn: async (updates: { title?: string; description?: string; links?: string[] }) => {
+    mutationFn: async (updates: { title?: string; description?: string; links?: string[]; contentBlocks?: ContentBlock[] }) => {
       if (!task) return;
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
@@ -140,7 +148,8 @@ export function NotionTaskModal({ task, open, onOpenChange }: NotionTaskModalPro
     updateTaskMutation.mutate({
       title: taskTitle,
       description: description || undefined,
-      links: links.length > 0 ? links : undefined
+      links: links.length > 0 ? links : undefined,
+      contentBlocks: contentBlocks
     });
   };
 
