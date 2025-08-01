@@ -195,10 +195,10 @@ export function NotionTaskModal({ task, open, onOpenChange }: NotionTaskModalPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
-        <div className="flex h-full">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+        <div className="flex h-[90vh]">
           {/* Main Content Area */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -223,27 +223,29 @@ export function NotionTaskModal({ task, open, onOpenChange }: NotionTaskModalPro
               </div>
             </div>
 
-            {/* Title */}
-            <div className="px-6 py-4">
-              {isEditing ? (
-                <Input
-                  value={taskTitle}
-                  onChange={(e) => setTaskTitle(e.target.value)}
-                  className="text-2xl font-bold border-none px-0 focus-visible:ring-0"
-                  placeholder="Task title..."
-                />
-              ) : (
-                <h1 
-                  className="text-2xl font-bold text-gray-900 cursor-text hover:bg-gray-50 p-2 rounded"
-                  onClick={() => setIsEditing(true)}
-                >
-                  {task.title}
-                </h1>
-              )}
-            </div>
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Title */}
+              <div className="px-6 py-4">
+                {isEditing ? (
+                  <Input
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    className="text-2xl font-bold border-none px-0 focus-visible:ring-0"
+                    placeholder="Task title..."
+                  />
+                ) : (
+                  <h1 
+                    className="text-2xl font-bold text-gray-900 cursor-text hover:bg-gray-50 p-2 rounded"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    {task.title}
+                  </h1>
+                )}
+              </div>
 
-            {/* Content Blocks */}
-            <div className="px-6 space-y-3">
+              {/* Content Blocks */}
+              <div className="px-6 space-y-3">
               {contentBlocks.map((block) => (
                 <div key={block.id} className="group relative">
                   {block.type === 'text' && (
@@ -386,9 +388,78 @@ export function NotionTaskModal({ task, open, onOpenChange }: NotionTaskModalPro
                 </div>
               )}
 
-              {/* Action Buttons */}
-              {isEditing && (
-                <div className="flex space-x-2 py-4">
+                {!isEditing && contentBlocks.length === 0 && (
+                  <div 
+                    className="p-4 text-center text-gray-400 cursor-pointer hover:bg-gray-50 rounded"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Click to add description, images, or links...
+                  </div>
+                )}
+
+                {/* Comments Section */}
+                <div className="px-6 py-6 border-t border-gray-200 mt-8">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <MessageSquare className="w-5 h-5 mr-2" />
+                    Comments ({task.comments?.length || 0})
+                  </h3>
+                  
+                  {/* Comment List */}
+                  <div className="space-y-4 mb-6">
+                    {task.comments && task.comments.length > 0 ? (
+                      task.comments.map((comment) => (
+                        <div key={comment.id} className="flex space-x-3">
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                            {comment.author.firstName?.[0]}{comment.author.lastName?.[0]}
+                          </div>
+                          <div className="flex-1">
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="font-medium text-sm">
+                                  {comment.author.firstName} {comment.author.lastName}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {comment.createdAt ? format(new Date(comment.createdAt), "MMM d, h:mm a") : ""}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-700">{comment.content}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-sm">No comments yet</p>
+                    )}
+                  </div>
+
+                  {/* Add Comment */}
+                  <div className="flex space-x-3">
+                    <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                      <Textarea
+                        placeholder="Write a comment..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        className="resize-none"
+                        rows={2}
+                      />
+                      <Button 
+                        onClick={() => addCommentMutation.mutate(newComment)}
+                        disabled={!newComment.trim() || addCommentMutation.isPending}
+                        size="sm"
+                      >
+                        {addCommentMutation.isPending ? "Adding..." : "Comment"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fixed Action Buttons for Editing Mode */}
+            {isEditing && (
+              <div className="border-t border-gray-200 bg-white px-6 py-4">
+                <div className="flex space-x-2">
                   <Button onClick={handleSave} disabled={updateTaskMutation.isPending}>
                     {updateTaskMutation.isPending ? "Saving..." : "Save Changes"}
                   </Button>
@@ -396,74 +467,8 @@ export function NotionTaskModal({ task, open, onOpenChange }: NotionTaskModalPro
                     Cancel
                   </Button>
                 </div>
-              )}
-
-              {!isEditing && contentBlocks.length === 0 && (
-                <div 
-                  className="p-4 text-center text-gray-400 cursor-pointer hover:bg-gray-50 rounded"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Click to add description, images, or links...
-                </div>
-              )}
-            </div>
-
-            {/* Comments Section */}
-            <div className="px-6 py-6 border-t border-gray-200 mt-8">
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <MessageSquare className="w-5 h-5 mr-2" />
-                Comments ({task.comments?.length || 0})
-              </h3>
-              
-              {/* Comment List */}
-              <div className="space-y-4 mb-6">
-                {task.comments && task.comments.length > 0 ? (
-                  task.comments.map((comment) => (
-                    <div key={comment.id} className="flex space-x-3">
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                        {comment.author.firstName?.[0]}{comment.author.lastName?.[0]}
-                      </div>
-                      <div className="flex-1">
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="font-medium text-sm">
-                              {comment.author.firstName} {comment.author.lastName}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {comment.createdAt ? format(new Date(comment.createdAt), "MMM d, h:mm a") : ""}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-700">{comment.content}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-sm">No comments yet</p>
-                )}
               </div>
-
-              {/* Add Comment */}
-              <div className="flex space-x-3">
-                <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-                <div className="flex-1 space-y-2">
-                  <Textarea
-                    placeholder="Write a comment..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="resize-none"
-                    rows={2}
-                  />
-                  <Button 
-                    onClick={() => addCommentMutation.mutate(newComment)}
-                    disabled={!newComment.trim() || addCommentMutation.isPending}
-                    size="sm"
-                  >
-                    {addCommentMutation.isPending ? "Adding..." : "Comment"}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Right Sidebar */}
