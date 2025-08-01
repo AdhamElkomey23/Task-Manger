@@ -583,6 +583,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Simple upload endpoint for Notion-style content blocks
+  app.post('/api/upload', isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const file = req.file;
+      const filePath = `/uploads/${file.filename}`;
+      
+      res.json({ filePath });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      res.status(500).json({ message: "Failed to upload file" });
+    }
+  });
+
   app.post('/api/files', isAuthenticated, upload.single('file'), async (req: any, res) => {
     try {
       if (!req.file) {

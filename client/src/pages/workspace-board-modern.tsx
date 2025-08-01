@@ -187,7 +187,7 @@ export default function ModernWorkspaceBoard() {
   const handleDrop = (e: React.DragEvent, newStatus: string) => {
     e.preventDefault();
     if (draggedTask && draggedTask.status !== newStatus) {
-      handleStatusChange(draggedTask.id, newStatus);
+      handleStatusChange(draggedTask.id, newStatus as "todo" | "in-progress" | "done");
     }
     setDraggedTask(null);
   };
@@ -456,14 +456,21 @@ export default function ModernWorkspaceBoard() {
                     >
                       <div className="grid grid-cols-12 gap-4 items-center">
                         {/* Task Name */}
-                        <div className="col-span-4 flex items-center space-x-3">
-                          <Checkbox className="w-4 h-4" />
-                          <span 
-                            className="text-sm font-medium text-foreground hover:text-blue-600 cursor-pointer"
+                        <div className="col-span-4 flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <Checkbox className="w-4 h-4" />
+                            <span className="text-sm font-medium text-foreground">
+                              {task.title}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleTaskClick(task)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
                           >
-                            {task.title}
-                          </span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
                         </div>
                         
                         {/* Assignee */}
@@ -595,13 +602,21 @@ export default function ModernWorkspaceBoard() {
                               <div className="space-y-2">
                                 {/* Task Header */}
                                 <div className="flex items-start justify-between">
-                                  <h4 
-                                    className="text-sm font-medium text-foreground group-hover:text-blue-600 transition-colors cursor-pointer"
-                                    onClick={() => handleTaskClick(task)}
-                                  >
+                                  <h4 className="text-sm font-medium text-foreground flex-1">
                                     {task.title}
                                   </h4>
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className="flex items-center space-x-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleTaskClick(task);
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
                                     <Badge 
                                       variant="outline" 
                                       className={`text-xs ${getPriorityColor(task.priority)}`}
@@ -649,7 +664,7 @@ export default function ModernWorkspaceBoard() {
                             if (newTitle?.trim()) {
                               createTaskMutation.mutate({
                                 title: newTitle.trim(),
-                                status: column.id,
+                                status: column.id as "todo" | "in-progress" | "done",
                                 workspaceId,
                               });
                             }

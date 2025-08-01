@@ -167,18 +167,35 @@ export function NotionTaskModal({ task, open, onOpenChange }: NotionTaskModalPro
     setContentBlocks(blocks => blocks.filter(block => block.id !== id));
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // For now, we'll add it as a placeholder - you'd upload to your server
-      const newBlock: ContentBlock = {
-        id: `image-${Date.now()}`,
-        type: 'image',
-        content: URL.createObjectURL(file),
-        title: file.name
-      };
-      setContentBlocks([...contentBlocks, newBlock]);
-      setShowAddMenu(false);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const { filePath } = await response.json();
+          const newBlock: ContentBlock = {
+            id: `image-${Date.now()}`,
+            type: 'image',
+            content: filePath, // Use server path instead of blob URL
+            title: file.name
+          };
+          setContentBlocks([...contentBlocks, newBlock]);
+          setShowAddMenu(false);
+        } else {
+          console.error('Failed to upload file');
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+      }
     }
   };
 
@@ -323,9 +340,15 @@ export function NotionTaskModal({ task, open, onOpenChange }: NotionTaskModalPro
                   {block.type === 'image' && (
                     <div className="border border-gray-200 rounded overflow-hidden">
                       <img 
-                        src={block.content} 
+                        src={block.content.startsWith('/uploads/') ? block.content : `/uploads/${block.content}`} 
                         alt={block.title || 'Task image'} 
                         className="w-full max-w-md h-auto"
+                        onError={(e) => {
+                          // Fallback for blob URLs during editing
+                          if (!block.content.startsWith('blob:')) {
+                            e.currentTarget.src = block.content;
+                          }
+                        }}
                       />
                       {isEditing && (
                         <Button
