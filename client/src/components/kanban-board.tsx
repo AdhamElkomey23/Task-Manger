@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TaskCard } from "./task-card";
-import { TaskDetailModal } from "./task-detail-modal";
+import { NotionTaskModal } from "./notion-task-modal";
 import { CreateTaskModal } from "./create-task-modal";
 import { type TaskWithDetails } from "@shared/schema";
 import { Plus } from "lucide-react";
@@ -99,7 +99,7 @@ export function KanbanBoard({ workspaceId }: KanbanBoardProps) {
         })}
       </div>
 
-      <TaskDetailModal
+      <NotionTaskModal
         task={selectedTask}
         open={taskModalOpen}
         onOpenChange={handleTaskModalClose}

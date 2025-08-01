@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Sidebar from "@/components/sidebar";
 import { CreateTaskModal } from "@/components/create-task-modal";
+import { NotionTaskModal } from "@/components/notion-task-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -51,6 +52,8 @@ export default function ModernWorkspaceBoard() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [addingTask, setAddingTask] = useState(false);
   const [draggedTask, setDraggedTask] = useState<TaskWithDetails | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -187,6 +190,18 @@ export default function ModernWorkspaceBoard() {
       handleStatusChange(draggedTask.id, newStatus);
     }
     setDraggedTask(null);
+  };
+
+  const handleTaskClick = (task: TaskWithDetails) => {
+    setSelectedTask(task);
+    setTaskModalOpen(true);
+  };
+
+  const handleTaskModalClose = (open: boolean) => {
+    setTaskModalOpen(open);
+    if (!open) {
+      setSelectedTask(null);
+    }
   };
 
   if (isLoading || !isAuthenticated) return null;
@@ -443,7 +458,10 @@ export default function ModernWorkspaceBoard() {
                         {/* Task Name */}
                         <div className="col-span-4 flex items-center space-x-3">
                           <Checkbox className="w-4 h-4" />
-                          <span className="text-sm font-medium text-foreground hover:text-blue-600 cursor-pointer">
+                          <span 
+                            className="text-sm font-medium text-foreground hover:text-blue-600 cursor-pointer"
+                            onClick={() => handleTaskClick(task)}
+                          >
                             {task.title}
                           </span>
                         </div>
@@ -577,7 +595,10 @@ export default function ModernWorkspaceBoard() {
                               <div className="space-y-2">
                                 {/* Task Header */}
                                 <div className="flex items-start justify-between">
-                                  <h4 className="text-sm font-medium text-foreground group-hover:text-blue-600 transition-colors">
+                                  <h4 
+                                    className="text-sm font-medium text-foreground group-hover:text-blue-600 transition-colors cursor-pointer"
+                                    onClick={() => handleTaskClick(task)}
+                                  >
                                     {task.title}
                                   </h4>
                                   <div className="text-xs text-muted-foreground">
@@ -652,6 +673,12 @@ export default function ModernWorkspaceBoard() {
         workspaceId={workspaceId} 
         open={showCreateTask} 
         onOpenChange={setShowCreateTask}
+      />
+      
+      <NotionTaskModal
+        task={selectedTask}
+        open={taskModalOpen}
+        onOpenChange={handleTaskModalClose}
       />
     </div>
   );
